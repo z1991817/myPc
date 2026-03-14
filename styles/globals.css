@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@plugin '../hero.ts';
+
+@source '../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans: "font", sans-serif;
+    --font-mono: "monospace", monospace;
+
+    /* Demo.html 自定义颜色 */
+    --color-primary: #8b5cf6;
+    --color-secondary: #d946ef;
+    --color-background-dark: #050505;
+    --color-panel-dark: #0c0c0c;
+    --color-card-dark: #161616;
+    --color-border-dark: rgba(255, 255, 255, 0.08);
+}
+
+/* Demo.html 自定义样式 */
+body {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.glass-panel {
+    background: rgba(18, 18, 18, 0.6);
+    backdrop-filter: blur(24px);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.hero-tab-active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.studio-gradient {
+    background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 80%);
+}
+
+.grid-box-zidingyi{
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 15px rgba(0, 0, 0, 0.1);
+}
