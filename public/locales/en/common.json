@@ -1,0 +1,102 @@
+{
+  "hero": {
+    "badge": "New: v4.0 Ultra HD Upscaling Now Live",
+    "title": "Enhance Your Images with AI Precision",
+    "subtitle": "Professional Image Processing",
+    "description": "Transform blurry, low-resolution photos into stunning 4K masterpieces in seconds. Professional suite for creators, powered by next-generation neural networks.",
+    "cta_start": "Start Free",
+    "cta_demo": "Watch Demo"
+  },
+  "features": {
+    "title": "Powerful Features",
+    "subtitle": "Professional Tools",
+    "upscale": {
+      "title": "AI Super Resolution",
+      "description": "Upscale images up to 4x using advanced neural networks while maintaining clarity"
+    },
+    "enhance": {
+      "title": "Smart Enhancement",
+      "description": "Automatically adjust colors, contrast, and sharpness for perfect results"
+    },
+    "restore": {
+      "title": "Photo Restoration",
+      "description": "Repair old photos, remove scratches, and restore faded colors"
+    },
+    "batch": {
+      "title": "Batch Processing",
+      "description": "Process hundreds of images at once, saving time and effort"
+    }
+  },
+  "showcase": {
+    "title": "Real Results Showcase",
+    "subtitle": "See What Our AI Can Do",
+    "before": "Before",
+    "after": "After"
+  },
+  "stats": {
+    "images": "Images Processed",
+    "users": "Active Users",
+    "rating": "User Rating",
+    "uptime": "Service Uptime"
+  },
+  "cta": {
+    "title": "Ready to See the Results?",
+    "description": "Sign up today and get 10 free high-resolution enhancements. No credit card required.",
+    "start_trial": "Start Free Trial",
+    "contact_sales": "Contact Sales"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About"
+  },
+  "tools": {
+    "upscale": {
+      "title": "AI Upscale",
+      "description": "Upscale images up to 4x using advanced neural networks"
+    },
+    "remove_bg": {
+      "title": "Background Removal",
+      "description": "Intelligently remove image backgrounds with one click"
+    },
+    "denoise": {
+      "title": "Noise Reduction",
+      "description": "Remove photo noise and improve image clarity"
+    }
+  },
+  "workflow": {
+    "title": "Three Simple Steps to Process",
+    "upload": {
+      "title": "Upload",
+      "description": "Drag or click to upload your image"
+    },
+    "enhance": {
+      "title": "Enhance",
+      "description": "AI automatically analyzes and optimizes"
+    },
+    "download": {
+      "title": "Download",
+      "description": "Get high-quality processed results"
+    }
+  },
+  "testimonials": {
+    "title": "User Reviews",
+    "subtitle": "Real Feedback from Creators Worldwide",
+    "user1": {
+      "name": "James Dalton",
+      "role": "Professional Photographer",
+      "content": "This tool has completely transformed my post-processing workflow. The AI upscaling feature allows me to extract amazing details from old photos."
+    },
+    "user2": {
+      "name": "Sarah K.",
+      "role": "Shopify Merchant",
+      "content": "The batch processing feature saves me tons of time. Now I can optimize my entire product catalog in minutes."
+    },
+    "user3": {
+      "name": "Rick Miller",
+      "role": "Visual Artist",
+      "content": "The photo restoration feature is incredible. I successfully restored precious family photos with results beyond expectations."
+    }
+  }
+}

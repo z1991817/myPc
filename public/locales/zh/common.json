@@ -1,0 +1,102 @@
+{
+  "hero": {
+    "badge": "新功能：v4.0 超高清放大已上线",
+    "title": "释放无限灵感，一键生成惊艳画作",
+    "subtitle": "专业级图像处理",
+    "description": "摒弃繁杂的工具与技巧。只需一句描述，或一张草图，即刻将脑海中的灵感渲染为专业级的视觉艺术。",
+    "cta_start": "开始创造",
+    "cta_demo": "探索画廊"
+  },
+  "features": {
+    "title": "让创意，不再受限于画笔",
+    "subtitle": "专业工具",
+    "upscale": {
+      "title": "AI 超分辨率",
+      "description": "使用先进的神经网络将图像放大至 4 倍，同时保持清晰度"
+    },
+    "enhance": {
+      "title": "智能增强",
+      "description": "自动调整颜色、对比度和清晰度以获得完美效果"
+    },
+    "restore": {
+      "title": "照片修复",
+      "description": "修复旧照片、去除划痕并恢复褪色的颜色"
+    },
+    "batch": {
+      "title": "批量处理",
+      "description": "一次处理数百张图像，节省时间和精力"
+    }
+  },
+  "showcase": {
+    "title": "真实效果展示",
+    "subtitle": "看看我们的 AI 能做什么",
+    "before": "处理前",
+    "after": "处理后"
+  },
+  "stats": {
+    "images": "已处理图片",
+    "users": "活跃用户",
+    "rating": "用户评分",
+    "uptime": "服务可用性"
+  },
+  "cta": {
+    "title": "你的下一幅杰作，正等待被唤醒。",
+    "description": "今天注册即可获得 10 次免费高分辨率增强。无需信用卡。",
+    "start_trial": "免费获取算力",
+    "contact_sales": "立即加入"
+  },
+  "nav": {
+    "home": "首页",
+    "features": "功能",
+    "pricing": "价格",
+    "about": "关于"
+  },
+  "tools": {
+    "upscale": {
+      "title": "文字造境",
+      "description": "用自然语言描绘你心中的世界。每一次敲击键盘，都在为你酝酿一场视觉风暴。"
+    },
+    "remove_bg": {
+      "title": "轮廓新生",
+      "description": "完美保留你的构图意图。即使是简单的线稿或色块，也能瞬间注入细腻的光影、材质与亿万级像素的细节。"
+    },
+    "denoise": {
+      "title": "风格随心",
+      "description": "跨越次元与现实的界限。从极致的 CG 渲染到细腻的胶片摄影，自由切换，驾驭一切视觉表达。"
+    }
+  },
+  "workflow": {
+    "title": "简单三步，完成处理",
+    "upload": {
+      "title": "构思",
+      "description": "写下你的灵感描述，或上传一张参考图作为起笔。"
+    },
+    "enhance": {
+      "title": "凝练",
+      "description": "调整偏好的风格与细节，将繁重的渲染工作交由引擎。"
+    },
+    "download": {
+      "title": "呈现",
+      "description": "仅仅几秒钟，收获一张属于你的惊艳之作。"
+    }
+  },
+  "testimonials": {
+    "title": "用户评价",
+    "subtitle": "来自全球创作者的真实反馈",
+    "user1": {
+      "name": "James Dalton",
+      "role": "资深视觉设计师",
+      "content": "以前找素材、做合成要花大半天，现在喝杯咖啡的功夫，概念图就已经定稿了。这才是现代数字创作者该有的效率。"
+    },
+    "user2": {
+      "name": "Sarah K.",
+      "role": "独立开发者",
+      "content": "作为独立开发者，产品的配图和占位图总是个头疼的问题。有了它，几句描述就能产出极具质感的图片，极大提升了我的开发节奏。"
+    },
+    "user3": {
+      "name": "Rick Miller",
+      "role": "视觉艺术家",
+      "content": "最让我惊喜的是它对草图的理解力。我只画了几个色块，它竟完美补全了整个赛博朋克城市的光影和景深。"
+    }
+  }
+}
