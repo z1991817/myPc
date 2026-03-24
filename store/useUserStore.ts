@@ -1,10 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export interface UserProfile {
+  id?: string | number;
+  username?: string;
+  name?: string;
+  nickname?: string;
+  email?: string;
+  avatar?: string | null;
+}
+
 interface UserState {
-  user: any | null;
+  user: UserProfile | null;
   token: string | null;
-  setUser: (user: any) => void;
+  setUser: (user: UserProfile) => void;
   setToken: (token: string) => void;
   clearUser: () => void;
 }

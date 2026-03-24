@@ -28,7 +28,12 @@ export default function LoginPage() {
     try {
       const res = await login({ username, password });
       setToken(res.data.token);
-      if (res.data.user) setUser(res.data.user);
+      setUser(
+        res.data.user ?? {
+          username,
+          name: username,
+        }
+      );
       router.push("/");
     } catch (err: any) {
       setError(err.response?.data?.message || "登录失败，请检查用户名和密码");

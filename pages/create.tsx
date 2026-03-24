@@ -1,6 +1,7 @@
-import { ChangeEvent, Key, useState } from "react";
+import { ChangeEvent, Key, useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
+import { useRouter } from "next/router";
 
 import DefaultLayout from "@/layouts/default";
 import { uploadImage, textToImage } from "@/api/images";
@@ -49,6 +50,7 @@ function getSelectionValue(keys: "all" | Set<Key>) {
 }
 
 export default function CreatePage() {
+  const router = useRouter();
   const [selectedRatio, setSelectedRatio] = useState("9:16");
   const [selectedCount, setSelectedCount] = useState("1");
   const [selectedModel, setSelectedModel] = useState("GPT Image");
@@ -62,6 +64,45 @@ export default function CreatePage() {
   const [generating, setGenerating] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined); // 存储会话 ID
+
+  /**
+   * 从 sessionStorage 中获取隐式传参数据并回显
+   */
+  useEffect(() => {
+    const paramsStr = sessionStorage.getItem('createImageParams');
+    if (paramsStr) {
+      try {
+        const params = JSON.parse(paramsStr);
+
+        // 回显 prompt
+        if (params.prompt) {
+          setPrompt(params.prompt);
+        }
+
+        // 回显 model
+        if (params.model && models.includes(params.model)) {
+          setSelectedModel(params.model);
+        }
+
+        // 回显 size（转换为比例格式）
+        if (params.size) {
+          const [width, height] = params.size.split("x").map(Number);
+          if (width && height) {
+            // 简化比例
+            if (width === height) setSelectedRatio("1:1");
+            else if (width === 1024 && height === 1280) setSelectedRatio("4:5");
+            else if (width === 1024 && height === 1820) setSelectedRatio("9:16");
+            else if (width === 1820 && height === 1024) setSelectedRatio("16:9");
+          }
+        }
+
+        // 清除 sessionStorage 中的参数，避免下次进入页面时重复使用
+        sessionStorage.removeItem('createImageParams');
+      } catch (error) {
+        console.error('解析参数失败:', error);
+      }
+    }
+  }, []);
 
   const handleImageLoad = (imageId: string) => {
     setLoadedImages((current) => ({ ...current, [imageId]: true }));

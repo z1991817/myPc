@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Select, SelectItem } from "@heroui/select";
@@ -24,7 +24,25 @@ import {
   RotateCwIcon,
   PaletteIcon,
 } from "@/components/icons";
-import { generateImage, uploadImage, imageToImage } from "@/api/images";
+import { generateImage, uploadImage, imageToImage, bananaCreateImage } from "@/api/images";
+
+/**
+ * 从markdown内容中提取图片URL
+ * @param content markdown格式的内容
+ * @returns 提取的图片URL数组
+ */
+const extractImageUrls = (content: string): string[] => {
+  // 匹配markdown图片格式: ![alt](url)
+  const imageRegex = /!\[.*?\]\((https?:\/\/[^\)]+)\)/g;
+  const urls: string[] = [];
+  let match;
+
+  while ((match = imageRegex.exec(content)) !== null) {
+    urls.push(match[1]);
+  }
+
+  return urls;
+};
 
 /**
  * 图片尺寸选项类型
@@ -37,12 +55,23 @@ interface AspectRatioOption {
 }
 
 /**
- * 可用图片尺寸列表
+ * GPT Image 1.5 可用图片尺寸
  */
-const ASPECT_RATIOS: AspectRatioOption[] = [
+const GPT_ASPECT_RATIOS: AspectRatioOption[] = [
   { value: "1024x1024", label: "1:1", ratio: "1:1", key: "1:1" },
   { value: "1024x1792", label: "2:3", ratio: "2:3", key: "2:3" },
-  { value: "1792x1024 ", label: "3:2", ratio: "3:2", key: "3:2" },
+  { value: "1792x1024", label: "3:2", ratio: "3:2", key: "3:2" },
+];
+
+/**
+ * Nano banana 系列可用图片尺寸
+ */
+const NANO_ASPECT_RATIOS: AspectRatioOption[] = [
+  { value: "1:1", label: "1:1", ratio: "1:1", key: "1:1" },
+  { value: "16:9", label: "16:9", ratio: "16:9", key: "16:9" },
+  { value: "9:16", label: "9:16", ratio: "9:16", key: "9:16" },
+  { value: "4:3", label: "4:3", ratio: "4:3", key: "4:3" },
+  { value: "3:4", label: "3:4", ratio: "3:4", key: "3:4" },
 ];
 
 /**
@@ -56,7 +85,9 @@ type TabType = "text-to-image" | "image-to-image";
 interface ModelOption {
   key: string;
   label: string;
+  value: string;
   description: string;
+  icon: string;
   badges: Array<{ text: string; color: "primary" | "warning" | "success" }>;
 }
 
@@ -65,18 +96,30 @@ interface ModelOption {
  */
 const MODELS: ModelOption[] = [
   {
+    key: "nano-banbana-2",
+    label: "Nano banbana 2",
+    value: "gemini-3.1-flash-image-preview",
+    description: "Fast and efficient image generation",
+    icon: "/image/banana.svg",
+    badges: [],
+  },
+  {
     key: "gpt-image-1.5",
     label: "GPT Image 1.5",
+    value: "gpt-image-1.5-all",
     description: "High-fidelity image generation with strong prompt following",
+    icon: "/image/gpt.svg",
     badges: [
       { text: "New", color: "primary" },
       { text: "Hot", color: "warning" },
     ],
   },
   {
-    key: "gpt-image-1.0",
-    label: "GPT Image 1.0",
-    description: "Standard quality image generation",
+    key: "nano-banana",
+    label: "Nano banana",
+    value: "gemini-2.5-flash-image",
+    description: "Lightweight image generation model",
+    icon: "/image/banana.svg",
     badges: [],
   },
 ];
@@ -101,7 +144,7 @@ const CreateNew: React.FC = () => {
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("1:1");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("gpt-image-1.5");
+  const [selectedModel, setSelectedModel] = useState("nano-banbana-2");
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [loadingPlaceholders, setLoadingPlaceholders] = useState<number>(0);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -114,6 +157,16 @@ const CreateNew: React.FC = () => {
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [urlImages, setUrlImages] = useState<string[]>([]);
 
+  // 根据选中模型动态获取可用比例
+  const ASPECT_RATIOS = useMemo(() => {
+    return selectedModel === "gpt-image-1.5" ? GPT_ASPECT_RATIOS : NANO_ASPECT_RATIOS;
+  }, [selectedModel]);
+
+  // 切换模型时重置比例为第一个选项
+  useEffect(() => {
+    setSelectedAspectRatio(selectedModel === "gpt-image-1.5" ? "1:1" : "1:1");
+  }, [selectedModel]);
+
   // 计算提示词字符数
   const promptLength = useMemo(() => prompt.length, [prompt]);
 
@@ -121,6 +174,65 @@ const CreateNew: React.FC = () => {
   const canGenerate = useMemo(() => {
     return prompt.trim().length > 0 && !isGenerating;
   }, [prompt, isGenerating]);
+
+  /**
+   * 从 sessionStorage 中获取隐式传参数据并回显
+   */
+  useEffect(() => {
+    const paramsStr = sessionStorage.getItem('createImageParams');
+    if (paramsStr) {
+      try {
+        const params = JSON.parse(paramsStr);
+
+        // 回显 prompt
+        if (params.prompt) {
+          setPrompt(params.prompt);
+        }
+
+        // 回显 model
+        if (params.model) {
+          // 将 gallery 的 model 映射到 createNew 的 model
+          const modelMap: Record<string, string> = {
+            'GPT Image': 'gpt-image-1.5',
+            'Flux Pro': 'flux-pro',
+            'Recraft V3': 'recraft-v3',
+          };
+          const mappedModel = modelMap[params.model] || 'gpt-image-1.5';
+          setSelectedModel(mappedModel);
+        }
+
+        // 回显 size（转换为比例格式）
+        if (params.size) {
+          const [width, height] = params.size.split("x").map(Number);
+          if (width && height) {
+            // 根据尺寸设置比例
+            if (width === height) setSelectedAspectRatio("1:1");
+            else if (width === 1024 && height === 1792) setSelectedAspectRatio("2:3");
+            else if (width === 1792 && height === 1024) setSelectedAspectRatio("3:2");
+          }
+        }
+
+        // 根据 generationType 切换 tab
+        if (params.generationType === "image-to-image") {
+          setActiveTab("image-to-image");
+          // 如果有参考图片 URL，设置到图生图模式
+          if (params.imageUrl) {
+            setUseImageUrl(true);
+            setImageUrls([params.imageUrl]);
+            setUrlImages([params.imageUrl]);
+          }
+        } else {
+          // text-to-image 保持默认的文生图 tab
+          setActiveTab("text-to-image");
+        }
+
+        // 清除 sessionStorage 中的参数
+        sessionStorage.removeItem('createImageParams');
+      } catch (error) {
+        console.error('解析参数失败:', error);
+      }
+    }
+  }, []);
 
   /**
    * 处理图片加载完成
@@ -148,44 +260,129 @@ const CreateNew: React.FC = () => {
       );
       const sizeValue = selectedRatio?.value || "1024x1024";
 
-      let response;
-
       // 判断是文生图还是图生图
       if (activeTab === "image-to-image") {
         // 获取图片URL数组
-        const imageUrls = useImageUrl ? urlImages.filter(u => u) : uploadedImages;
+        const inputImageUrls = useImageUrl
+          ? urlImages.filter((u) => u)
+          : uploadedImages;
 
-        if (imageUrls.length === 0) {
+        if (inputImageUrls.length === 0) {
           setErrorMessage("请先上传参考图片或输入图片链接");
           setIsErrorModalOpen(true);
           return;
         }
 
-        response = await imageToImage(prompt, imageUrls, sizeValue);
+        // 调用真实的图生图接口
+        const response = await imageToImage(prompt, inputImageUrls, sizeValue);
+
+        console.log("图生图接口返回数据:", response);
+
+        // 从返回的data.thirdPartyResponse.content中提取图片URL
+        if (
+          !response.success ||
+          !response.data?.thirdPartyResponse?.choices?.[0]?.message?.content
+        ) {
+          console.error("返回数据结构异常:", response);
+          setErrorMessage(response.message || "返回数据格式错误，请重试");
+          setIsErrorModalOpen(true);
+          return;
+        }
+
+        const content =
+          response.data.thirdPartyResponse.choices[0].message.content;
+        const extractedImageUrls = extractImageUrls(content);
+
+        console.log("提取的图片URLs:", extractedImageUrls);
+
+        if (extractedImageUrls.length > 0) {
+          const newImages: GeneratedImage[] = extractedImageUrls.map(
+            (url, index) => ({
+              id: `${Date.now()}-${index}`,
+              url: url,
+              prompt: prompt,
+              isLoaded: false,
+            }),
+          );
+
+          setGeneratedImages((prev) => [...newImages, ...prev]);
+
+          // 显示成功提示
+          addToast({
+            title: "生成成功",
+            description: "图片已生成完成",
+            color: "success",
+          });
+
+          // 清空提示词
+          setPrompt("");
+        } else {
+          setErrorMessage("未能从返回数据中提取到图片URL");
+          setIsErrorModalOpen(true);
+        }
       } else {
-        response = await generateImage(prompt, sizeValue);
-      }
+        // 判断是否为 Nano Banana 系列模型
+        const isNanoBanana = ["nano-banbana-2", "nano-banana"].includes(selectedModel);
 
-      if (response.success && response.data.thirdPartyResponse.data) {
-        const newImages: GeneratedImage[] =
-          response.data.thirdPartyResponse.data.map((item, index) => ({
-            id: `${Date.now()}-${index}`,
-            url: item.url,
-            prompt: item.revised_prompt,
-            isLoaded: false,
-          }));
+        if (isNanoBanana) {
+          // 获取当前模型的 value 值
+          const modelOption = MODELS.find((m) => m.key === selectedModel);
+          const modelValue = modelOption?.value || selectedModel;
 
-        setGeneratedImages((prev) => [...newImages, ...prev]);
+          // 调用 Nano Banana 专用接口，传入 aspectRatio key（如 "1:1"）
+          const response = await bananaCreateImage(modelValue, prompt, selectedAspectRatio);
 
-        // 显示成功提示
-        addToast({
-          title: "生成成功",
-          description: "图片已生成完成",
-          color: "success",
-        });
+          console.log("Nano Banana 接口返回数据:", response);
 
-        // 清空提示词
-        setPrompt("");
+          if (response.success && response.data?.cosUrl) {
+            const newImage: GeneratedImage = {
+              id: `${Date.now()}-0`,
+              url: response.data.cosUrl,
+              prompt: prompt,
+              isLoaded: false,
+            };
+
+            setGeneratedImages((prev) => [newImage, ...prev]);
+
+            // 显示成功提示
+            addToast({
+              title: "生成成功",
+              description: "图片已生成完成",
+              color: "success",
+            });
+
+            // 清空提示词
+            setPrompt("");
+          } else {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
+          }
+        } else {
+          // 原有文生图逻辑保持不变
+          const response = await generateImage(prompt, sizeValue);
+
+          if (response.success && response.data.thirdPartyResponse.data) {
+            const newImages: GeneratedImage[] =
+              response.data.thirdPartyResponse.data.map((item, index) => ({
+                id: `${Date.now()}-${index}`,
+                url: item.url,
+                prompt: item.revised_prompt,
+                isLoaded: false,
+              }));
+
+            setGeneratedImages((prev) => [...newImages, ...prev]);
+
+            // 显示成功提示
+            addToast({
+              title: "生成成功",
+              description: "图片已生成完成",
+              color: "success",
+            });
+
+            // 清空提示词
+            setPrompt("");
+          }
+        }
       }
     } catch (error) {
       console.error("生成失败:", error);
@@ -411,13 +608,11 @@ const CreateNew: React.FC = () => {
                     return (
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-default-200 rounded flex items-center justify-center flex-shrink-0">
-                          <svg
+                          <img
+                            alt={model.label}
                             className="w-6 h-6"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                          </svg>
+                            src={model.icon}
+                          />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -451,8 +646,11 @@ const CreateNew: React.FC = () => {
                   }}
                 >
                   {MODELS.map((model) => (
-                    <SelectItem key={model.key}>
-                      <div className="flex items-center gap-2">
+                    <SelectItem key={model.key} textValue={model.label}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-default-200 rounded flex items-center justify-center flex-shrink-0">
+                          <img alt={model.label} className="w-5 h-5" src={model.icon} />
+                        </div>
                         <span className="font-medium">{model.label}</span>
                         {model.badges.map((badge, idx) => (
                           <Chip
@@ -637,7 +835,15 @@ const CreateNew: React.FC = () => {
                   图片比例
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {ASPECT_RATIOS.map((ratio) => (
+                  {ASPECT_RATIOS.map((ratio) => {
+                    // 根据比例动态计算预览形状尺寸
+                    const [w, h] = ratio.ratio.split(":").map(Number);
+                    const maxSize = 36;
+                    const scale = maxSize / Math.max(w, h);
+                    const shapeW = Math.round(w * scale);
+                    const shapeH = Math.round(h * scale);
+
+                    return (
                     <button
                       key={ratio.key}
                       className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all ${
@@ -655,18 +861,8 @@ const CreateNew: React.FC = () => {
                             : "border-default-300 bg-default-200"
                         }`}
                         style={{
-                          width:
-                            ratio.key === "1:1"
-                              ? "32px"
-                              : ratio.key === "2:3"
-                                ? "24px"
-                                : "40px",
-                          height:
-                            ratio.key === "1:1"
-                              ? "32px"
-                              : ratio.key === "2:3"
-                                ? "36px"
-                                : "27px",
+                          width: `${shapeW}px`,
+                          height: `${shapeH}px`,
                         }}
                       />
                       <span
@@ -679,7 +875,8 @@ const CreateNew: React.FC = () => {
                         {ratio.label}
                       </span>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -709,7 +906,7 @@ const CreateNew: React.FC = () => {
                 {/* <h2 className="text-lg font-semibold">生成历史</h2> */}
               </div>
               {/* 图片网格 */}
-              <div className="w-full h-[400px] lg:h-[600px] rounded-2xl lg:rounded-3xl border border-default-200/30 bg-muted/10 backdrop-blur-sm overflow-hidden relative flex flex-col shadow-2xl">
+                <div className="w-full h-[400px] lg:h-[600px] rounded-2xl lg:rounded-3xl border border-default-200/30 bg-muted/10 backdrop-blur-sm overflow-hidden relative flex flex-col shadow-2xl">
                 <div className="w-full h-full bg-muted/30 flex items-center justify-center p-3 lg:p-4">
                   {/* 加载中的骨架屏 - 带闪烁动画 */}
                   {loadingPlaceholders > 0 &&

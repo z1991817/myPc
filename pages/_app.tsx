@@ -10,6 +10,9 @@ import { appWithTranslation } from "next-i18next";
 
 import { fontSans, fontMono } from "@/config/fonts";
 import "@/styles/globals.css";
+import "swiper/css";
+import "swiper/css/effect-coverflow";
+import "swiper/css/pagination";
 
 function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

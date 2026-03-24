@@ -117,11 +117,78 @@ export const generateImage = async (
   return request.post("/app/text-to-image", { prompt, size });
 };
 
+// 图生图响应类型（新格式）
+export interface ImageToImageResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+  data: {
+    recordId: number;
+    sessionId: string;
+    thirdPartyUrl: string;
+    thirdPartyResponse: {
+      id: string;
+      object: string;
+      created: number;
+      model: string;
+      choices: Array<{
+        index: number;
+        message: {
+          role: string;
+          content: string; // markdown格式的内容，包含图片URL
+        };
+        finish_reason: string;
+      }>;
+      usage: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+        prompt_tokens_details?: {
+          text_tokens: number;
+        };
+        completion_tokens_details?: {
+          content_tokens: number;
+        };
+      };
+    };
+    upload: {
+      taskId: string;
+      status: string;
+      queryPath: string;
+    };
+  };
+}
+
 // 图生图接口
 export const imageToImage = async (
   prompt: string,
   imageUrl: string[],
   size?: string,
-): Promise<GenerateImageResponse> => {
+): Promise<ImageToImageResponse> => {
   return request.post("/app/image-to-image", { prompt, imageUrl, size });
+};
+
+// Banana 系列图片生成响应类型
+export interface BananaCreateImageResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+  data: {
+    cosUrl: string;
+    thirdPartyResponse: object;
+  };
+}
+
+/**
+ * Nano Banana 系列图片生成接口
+ * @param model 模型 value（如 gemini-3.1-flash-image-preview）
+ * @param prompt 提示词
+ * @param aspectRatio 图片比例（如 "1:1"、"16:9"）
+ */
+export const bananaCreateImage = async (
+  model: string,
+  prompt: string,
+  aspectRatio: string,
+): Promise<BananaCreateImageResponse> => {
+  return request.post("/app/banana-CreateImage", { model, prompt, aspectRatio });
 };
