@@ -69,7 +69,8 @@ export default function CreatePage() {
    * 从 sessionStorage 中获取隐式传参数据并回显
    */
   useEffect(() => {
-    const paramsStr = sessionStorage.getItem('createImageParams');
+    const paramsStr = sessionStorage.getItem("createImageParams");
+
     if (paramsStr) {
       try {
         const params = JSON.parse(paramsStr);
@@ -87,19 +88,22 @@ export default function CreatePage() {
         // 回显 size（转换为比例格式）
         if (params.size) {
           const [width, height] = params.size.split("x").map(Number);
+
           if (width && height) {
             // 简化比例
             if (width === height) setSelectedRatio("1:1");
             else if (width === 1024 && height === 1280) setSelectedRatio("4:5");
-            else if (width === 1024 && height === 1820) setSelectedRatio("9:16");
-            else if (width === 1820 && height === 1024) setSelectedRatio("16:9");
+            else if (width === 1024 && height === 1820)
+              setSelectedRatio("9:16");
+            else if (width === 1820 && height === 1024)
+              setSelectedRatio("16:9");
           }
         }
 
         // 清除 sessionStorage 中的参数，避免下次进入页面时重复使用
-        sessionStorage.removeItem('createImageParams');
+        sessionStorage.removeItem("createImageParams");
       } catch (error) {
-        console.error('解析参数失败:', error);
+        console.error("解析参数失败:", error);
       }
     }
   }, []);

@@ -37,7 +37,10 @@ export default function DefaultLayout({
           <div className="mx-auto max-w-7xl">
             <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
               <div className="col-span-1">
-                <NextLink className="mb-6 inline-flex items-center gap-3" href="/">
+                <NextLink
+                  className="mb-6 inline-flex items-center gap-3"
+                  href="/"
+                >
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/20">
                     <Logo size={22} />
                   </div>
@@ -46,7 +49,8 @@ export default function DefaultLayout({
                   </span>
                 </NextLink>
                 <p className="text-sm leading-7 text-slate-400">
-                  面向创意团队的 AI 图像工作台，帮助你更快完成提案视觉、商品主图和角色概念图。
+                  面向创意团队的 AI
+                  图像工作台，帮助你更快完成提案视觉、商品主图和角色概念图。
                 </p>
               </div>
 
@@ -95,22 +99,34 @@ export default function DefaultLayout({
                 <h5 className="mb-6 font-bold text-white">公司</h5>
                 <ul className="space-y-4 text-sm text-slate-400">
                   <li>
-                    <Link className="text-slate-400 transition-colors hover:text-blue-400" href="#">
+                    <Link
+                      className="text-slate-400 transition-colors hover:text-blue-400"
+                      href="#"
+                    >
                       关于我们
                     </Link>
                   </li>
                   <li>
-                    <Link className="text-slate-400 transition-colors hover:text-blue-400" href="#">
+                    <Link
+                      className="text-slate-400 transition-colors hover:text-blue-400"
+                      href="#"
+                    >
                       博客
                     </Link>
                   </li>
                   <li>
-                    <Link className="text-slate-400 transition-colors hover:text-blue-400" href="#">
+                    <Link
+                      className="text-slate-400 transition-colors hover:text-blue-400"
+                      href="#"
+                    >
                       服务条款
                     </Link>
                   </li>
                   <li>
-                    <Link className="text-slate-400 transition-colors hover:text-blue-400" href="#">
+                    <Link
+                      className="text-slate-400 transition-colors hover:text-blue-400"
+                      href="#"
+                    >
                       隐私政策
                     </Link>
                   </li>

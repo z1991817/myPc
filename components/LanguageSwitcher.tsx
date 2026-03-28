@@ -1,6 +1,11 @@
 import { useRouter } from "next/router";
 import { Button } from "@heroui/button";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 
 /**
  * 语言切换组件
@@ -23,12 +28,13 @@ export const LanguageSwitcher = () => {
     { key: "en", label: "English", flag: "🇺🇸" },
   ];
 
-  const currentLanguage = languages.find((lang) => lang.key === locale) || languages[0];
+  const currentLanguage =
+    languages.find((lang) => lang.key === locale) || languages[0];
 
   return (
     <Dropdown>
       <DropdownTrigger>
-        <Button variant="bordered" size="sm">
+        <Button size="sm" variant="bordered">
           <span className="mr-1">{currentLanguage.flag}</span>
           {currentLanguage.label}
         </Button>
@@ -38,10 +44,7 @@ export const LanguageSwitcher = () => {
         onAction={(key) => changeLanguage(key as string)}
       >
         {languages.map((lang) => (
-          <DropdownItem
-            key={lang.key}
-            startContent={<span>{lang.flag}</span>}
-          >
+          <DropdownItem key={lang.key} startContent={<span>{lang.flag}</span>}>
             {lang.label}
           </DropdownItem>
         ))}

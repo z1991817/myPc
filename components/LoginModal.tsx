@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { Link } from "@heroui/link";
 import { addToast } from "@heroui/toast";
 import { useRouter } from "next/router";
+
 import { login, register } from "@/api/auth";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -86,6 +82,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     // 简单邮箱格式校验
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("请输入有效的邮箱地址");
+
       return;
     }
 
@@ -97,8 +94,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setCountdown((prev) => {
         if (prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
+
           return 0;
         }
+
         return prev - 1;
       });
     }, 1000);
@@ -113,10 +112,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     if (mode === "register") {
       if (password !== confirmPassword) {
         setError("两次输入的密码不一致");
+
         return;
       }
       if (!email || !emailCode) {
         setError("请填写邮箱和验证码");
+
         return;
       }
     }
@@ -125,16 +126,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     try {
       const apiCall = mode === "login" ? login : register;
-      const params = mode === "login"
-        ? { username, password }
-        : { username, password, email, code: emailCode };
+      const params =
+        mode === "login"
+          ? { username, password }
+          : { username, password, email, code: emailCode };
       const res = await apiCall(params as any);
+
       setToken(res.data.token);
       setUser(
         res.data.user ?? {
           username,
           name: username,
-        }
+        },
       );
       // 注册成功 toast 提示
       if (!isLogin) {
@@ -148,6 +151,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         mode === "login"
           ? "登录失败，请检查用户名和密码"
           : "注册失败，请稍后重试";
+
       setError(err.response?.data?.message || defaultMsg);
     } finally {
       setIsLoading(false);
@@ -160,15 +164,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      placement="center"
       backdrop="blur"
       classNames={{
         base: "bg-[#0f1629] border border-white/10 text-white",
         header: "border-b border-white/10",
         closeButton: "text-white/60 hover:text-white hover:bg-white/10",
       }}
+      isOpen={isOpen}
+      placement="center"
+      onClose={handleClose}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1 text-center">
@@ -189,8 +193,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <div className="absolute bottom-0 left-0 -mb-6 -ml-6 h-24 w-24 rounded-full bg-orange-500/20 blur-3xl" />
                 <div className="relative flex items-center gap-3">
                   <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/40">
-                    <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
-                      <rect x="3" y="8" width="18" height="4" rx="1" />
+                    <svg
+                      className="h-4 w-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect height="4" rx="1" width="18" x="3" y="8" />
                       <path d="M12 8v13" />
                       <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
                       <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
@@ -200,7 +212,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900">
                       新用户奖励
                     </span>
-                    <p className="text-sm font-bold text-white mt-1">获得 20 免费点数</p>
+                    <p className="text-sm font-bold text-white mt-1">
+                      获得 20 免费点数
+                    </p>
                   </div>
                 </div>
               </div>
@@ -209,105 +223,112 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           )}
 
           {/* 表单 */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <Input
-              label="用户名"
-              placeholder="请输入用户名"
-              value={username}
-              onValueChange={setUsername}
-              variant="bordered"
               isRequired
               autoComplete="username"
               classNames={{
                 input: "text-white",
                 label: "text-white/70",
-                inputWrapper: "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
+                inputWrapper:
+                  "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
               }}
+              label="用户名"
+              placeholder="请输入用户名"
+              value={username}
+              variant="bordered"
+              onValueChange={setUsername}
             />
 
             <Input
-              label="密码"
-              placeholder="请输入密码"
-              type="password"
-              value={password}
-              onValueChange={setPassword}
-              variant="bordered"
               isRequired
               autoComplete={isLogin ? "current-password" : "new-password"}
               classNames={{
                 input: "text-white",
                 label: "text-white/70",
-                inputWrapper: "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
+                inputWrapper:
+                  "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
               }}
+              label="密码"
+              placeholder="请输入密码"
+              type="password"
+              value={password}
+              variant="bordered"
+              onValueChange={setPassword}
             />
 
             {/* 注册时显示确认密码 */}
             {!isLogin && (
               <Input
-                label="确认密码"
-                placeholder="请再次输入密码"
-                type="password"
-                value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                variant="bordered"
                 isRequired
                 autoComplete="new-password"
                 classNames={{
                   input: "text-white",
                   label: "text-white/70",
-                  inputWrapper: "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
+                  inputWrapper:
+                    "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
                 }}
+                label="确认密码"
+                placeholder="请再次输入密码"
+                type="password"
+                value={confirmPassword}
+                variant="bordered"
+                onValueChange={setConfirmPassword}
               />
             )}
 
             {/* 注册时显示邮箱 */}
             {!isLogin && (
               <Input
-                label="邮箱"
-                placeholder="请输入邮箱地址"
-                type="email"
-                value={email}
-                onValueChange={setEmail}
-                variant="bordered"
                 isRequired
                 autoComplete="email"
                 classNames={{
                   input: "text-white",
                   label: "text-white/70",
-                  inputWrapper: "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
+                  inputWrapper:
+                    "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
                 }}
                 endContent={
                   <Button
-                    size="sm"
                     className={`min-w-[90px] ${
                       isEmailValid && countdown === 0
                         ? "bg-primary text-white"
                         : "text-white/40 bg-transparent"
                     }`}
-                    variant={isEmailValid && countdown === 0 ? "solid" : "light"}
                     isDisabled={!isEmailValid || countdown > 0}
+                    size="sm"
+                    variant={
+                      isEmailValid && countdown === 0 ? "solid" : "light"
+                    }
                     onPress={handleSendCode}
                   >
                     {countdown > 0 ? `${countdown}s` : "发送验证码"}
                   </Button>
                 }
+                label="邮箱"
+                placeholder="请输入邮箱地址"
+                type="email"
+                value={email}
+                variant="bordered"
+                onValueChange={setEmail}
               />
             )}
 
             {/* 注册时显示验证码 */}
             {!isLogin && (
               <Input
-                label="验证码"
-                placeholder="请输入验证码"
-                value={emailCode}
-                onValueChange={setEmailCode}
-                variant="bordered"
                 isRequired
                 classNames={{
                   input: "text-white",
                   label: "text-white/70",
-                  inputWrapper: "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
+                  inputWrapper:
+                    "border-white/20 hover:border-white/40 group-data-[focus=true]:border-[#4F46E5]",
                 }}
+                label="验证码"
+                placeholder="请输入验证码"
+                value={emailCode}
+                variant="bordered"
+                onValueChange={setEmailCode}
               />
             )}
 
@@ -316,15 +337,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             )}
 
             <Button
-              type="submit"
               className="bg-gradient-to-r from-[#4F46E5] to-[#06B6D4] text-white font-semibold"
-              size="lg"
-              isLoading={isLoading}
               isDisabled={
                 !username ||
                 !password ||
                 (!isLogin && (!confirmPassword || !email || !emailCode))
               }
+              isLoading={isLoading}
+              size="lg"
+              type="submit"
             >
               {isLogin ? "登录" : "注册"}
             </Button>

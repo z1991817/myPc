@@ -52,7 +52,7 @@ export interface DeleteCreationResponse {
  */
 export const getMyCreations = async (
   page: number = 1,
-  pageSize: number = 12
+  pageSize: number = 12,
 ): Promise<MyCreationsResponse> => {
   return request.get("/app/my-creations", {
     params: { page, pageSize },
@@ -64,7 +64,7 @@ export const getMyCreations = async (
  * @param id 创作ID
  */
 export const deleteCreation = async (
-  id: number
+  id: number,
 ): Promise<DeleteCreationResponse> => {
   return request.delete(`/app/my-creations/${id}`);
 };

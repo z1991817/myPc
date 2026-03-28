@@ -9,6 +9,8 @@ import { ToastProvider } from "@heroui/toast";
 import { appWithTranslation } from "next-i18next";
 
 import { fontSans, fontMono } from "@/config/fonts";
+import InsufficientPointsModal from "@/components/InsufficientPointsModal";
+import { useInsufficientPointsModal } from "@/store/useInsufficientPointsModal";
 import "@/styles/globals.css";
 import "swiper/css";
 import "swiper/css/effect-coverflow";
@@ -17,6 +19,7 @@ import "swiper/css/pagination";
 function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [queryClient] = useState(() => new QueryClient());
+  const { isOpen, message, closeModal } = useInsufficientPointsModal();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -24,6 +27,12 @@ function App({ Component, pageProps }: AppProps) {
         <NextThemesProvider attribute="class" defaultTheme="dark">
           <Component {...pageProps} />
           <ToastProvider />
+          {/* 全局积分不足模态框 */}
+          <InsufficientPointsModal
+            isOpen={isOpen}
+            message={message}
+            onClose={closeModal}
+          />
         </NextThemesProvider>
       </HeroUIProvider>
     </QueryClientProvider>

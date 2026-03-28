@@ -4,6 +4,7 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Divider } from "@heroui/divider";
+
 import { login } from "@/api/auth";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -27,12 +28,13 @@ export default function LoginPage() {
 
     try {
       const res = await login({ username, password });
+
       setToken(res.data.token);
       setUser(
         res.data.user ?? {
           username,
           name: username,
-        }
+        },
       );
       router.push("/");
     } catch (err: any) {
@@ -57,26 +59,26 @@ export default function LoginPage() {
         <Divider />
 
         <CardBody className="px-8 py-6">
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <form className="flex flex-col gap-4" onSubmit={handleLogin}>
             <Input
+              isRequired
+              autoComplete="username"
               label="用户名"
               placeholder="请输入用户名"
               value={username}
-              onValueChange={setUsername}
               variant="bordered"
-              isRequired
-              autoComplete="username"
+              onValueChange={setUsername}
             />
 
             <Input
+              isRequired
+              autoComplete="current-password"
               label="密码"
               placeholder="请输入密码"
               type="password"
               value={password}
-              onValueChange={setPassword}
               variant="bordered"
-              isRequired
-              autoComplete="current-password"
+              onValueChange={setPassword}
             />
 
             {error && (
@@ -84,12 +86,12 @@ export default function LoginPage() {
             )}
 
             <Button
-              type="submit"
-              color="primary"
-              size="lg"
               className="mt-2"
-              isLoading={isLoading}
+              color="primary"
               isDisabled={!username || !password}
+              isLoading={isLoading}
+              size="lg"
+              type="submit"
             >
               登录
             </Button>

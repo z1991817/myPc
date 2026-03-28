@@ -2,7 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Skeleton } from "@heroui/skeleton";
 import { Spinner } from "@heroui/spinner";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { motion } from "framer-motion";
@@ -39,7 +45,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
           }
         });
       },
-      { rootMargin: "50px" }
+      { rootMargin: "50px" },
     );
 
     if (cardRef.current) {
@@ -50,7 +56,11 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
   }, []);
 
   return (
-    <div ref={cardRef} className="mb-4 cursor-pointer" onClick={() => onPreview(image)}>
+    <div
+      ref={cardRef}
+      className="mb-4 cursor-pointer"
+      onClick={() => onPreview(image)}
+    >
       <Card className="overflow-hidden group">
         <CardBody className="p-0">
           <div className="relative aspect-[3/4] overflow-hidden">
@@ -93,7 +103,9 @@ export default function GalleryPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<GalleryImageItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<GalleryImageItem | null>(
+    null,
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const loadingRef = useRef(false);
   const observerRef = useRef<HTMLDivElement>(null);
@@ -142,14 +154,17 @@ export default function GalleryPage() {
   const handleCreateSimilar = () => {
     // 使用 sessionStorage 隐式传参
     if (selectedImage) {
-      sessionStorage.setItem('createImageParams', JSON.stringify({
-        prompt: selectedImage.prompt,
-        model: selectedImage.model,
-        size: selectedImage.size,
-        imageUrl: selectedImage.cos_url,
-        generationType: selectedImage.generation_type,
-      }));
-      router.push('/createNew');
+      sessionStorage.setItem(
+        "createImageParams",
+        JSON.stringify({
+          prompt: selectedImage.prompt,
+          model: selectedImage.model,
+          size: selectedImage.size,
+          imageUrl: selectedImage.cos_url,
+          generationType: selectedImage.generation_type,
+        }),
+      );
+      router.push("/createNew");
     }
   };
 
@@ -159,11 +174,14 @@ export default function GalleryPage() {
   const handleReferenceImage = () => {
     // 只传递图片 URL，切换到图生图 tab
     if (selectedImage) {
-      sessionStorage.setItem('createImageParams', JSON.stringify({
-        imageUrl: selectedImage.cos_url,
-        generationType: 'image-to-image',
-      }));
-      router.push('/createNew');
+      sessionStorage.setItem(
+        "createImageParams",
+        JSON.stringify({
+          imageUrl: selectedImage.cos_url,
+          generationType: "image-to-image",
+        }),
+      );
+      router.push("/createNew");
     }
   };
 
@@ -214,8 +232,10 @@ export default function GalleryPage() {
    */
   const throttle = (func: Function, delay: number) => {
     let lastCall = 0;
+
     return (...args: any[]) => {
       const now = Date.now();
+
       if (now - lastCall >= delay) {
         lastCall = now;
         func(...args);
@@ -251,16 +271,17 @@ export default function GalleryPage() {
       <div className="max-w-[1280px] mx-auto px-4 py-12">
         {/* 文字区域 */}
         <motion.div
+          animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
           <h1 className="tracking-tight inline font-semibold from-[#FF1CF7] to-[#b249f8] text-[clamp(1rem,10vw,2rem)] sm:text-[clamp(1rem,10vw,3rem)] lg:text-5xl bg-clip-text text-transparent bg-linear-to-b">
             AI 藝術圖庫
           </h1>
           <p className="text-lg text-default-600 max-w-3xl mx-auto">
-            探索令人驚嘆的 AI 生成圖像，並發掘其背後的提示詞。獲取靈感，創造您自己的傑作。
+            探索令人驚嘆的 AI
+            生成圖像，並發掘其背後的提示詞。獲取靈感，創造您自己的傑作。
           </p>
         </motion.div>
 
@@ -272,7 +293,11 @@ export default function GalleryPage() {
             columnClassName="pl-4 bg-clip-padding"
           >
             {images.map((image) => (
-              <ImageCard key={image.id} image={image} onPreview={handlePreview} />
+              <ImageCard
+                key={image.id}
+                image={image}
+                onPreview={handlePreview}
+              />
             ))}
           </Masonry>
         )}
@@ -293,9 +318,7 @@ export default function GalleryPage() {
 
         {/* 空状态 */}
         {!loading && images.length === 0 && (
-          <div className="text-center py-16 text-default-500">
-            暫無圖片數據
-          </div>
+          <div className="text-center py-16 text-default-500">暫無圖片數據</div>
         )}
 
         {/* 滚动观察器 */}
@@ -305,9 +328,9 @@ export default function GalleryPage() {
       {/* 图片预览 Modal */}
       <Modal
         isOpen={isModalOpen}
+        scrollBehavior="inside"
         size="5xl"
         onClose={handleCloseModal}
-        scrollBehavior="inside"
       >
         <ModalContent>
           {(onClose) => (
@@ -337,9 +360,11 @@ export default function GalleryPage() {
                           </h3>
                           <button
                             className="p-1.5 rounded-lg hover:bg-default-200 transition-colors"
-                            onClick={() => copyToClipboard(selectedImage.prompt)}
+                            onClick={() =>
+                              copyToClipboard(selectedImage.prompt)
+                            }
                           >
-                            <CopyIcon size={18} className="text-default-600" />
+                            <CopyIcon className="text-default-600" size={18} />
                           </button>
                         </div>
                         <div className="max-h-[200px] overflow-y-auto p-3 bg-default-100 rounded-lg">

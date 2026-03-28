@@ -10,13 +10,14 @@ import { useEffect, useRef, useState } from "react";
  */
 export function useScrollAnimation(
   threshold: number = 0.1,
-  triggerOnce: boolean = true
+  triggerOnce: boolean = true,
 ) {
   const ref = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const element = ref.current;
+
     if (!element) return;
 
     const observer = new IntersectionObserver(
@@ -34,7 +35,7 @@ export function useScrollAnimation(
       {
         threshold,
         rootMargin: "0px 0px -50px 0px", // 提前 50px 触发
-      }
+      },
     );
 
     observer.observe(element);

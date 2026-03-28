@@ -7,8 +7,17 @@ import { Button } from "@heroui/button";
 import { useRouter } from "next/router";
 
 import DefaultLayout from "@/layouts/default";
-import { getMyCreations, deleteCreation, MyCreationItem } from "@/api/my-creations";
-import { CopyIcon, DownloadIcon, EditIcon, DeleteIcon } from "@/components/icons";
+import {
+  getMyCreations,
+  deleteCreation,
+  MyCreationItem,
+} from "@/api/my-creations";
+import {
+  CopyIcon,
+  DownloadIcon,
+  EditIcon,
+  DeleteIcon,
+} from "@/components/icons";
 import { useUserStore } from "@/store/useUserStore";
 
 /** 按钮通用样式 */
@@ -65,7 +74,8 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
   };
 
   /** 生成类型中文映射 */
-  const typeLabel = item.generation_type === "text-to-image" ? "文生图" : "图生图";
+  const typeLabel =
+    item.generation_type === "text-to-image" ? "文生图" : "图生图";
 
   /** 复制提示词 - 防止重复点击 */
   const handleCopy = async () => {
@@ -178,25 +188,42 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
             </div>
 
             {/* 提示词 - 单行溢出省略 */}
-            <p className="text-sm text-default-400 line-clamp-1" title={item.prompt}>
+            <p
+              className="text-sm text-default-400 line-clamp-1"
+              title={item.prompt}
+            >
               {item.prompt}
             </p>
 
             {/* 按钮区域 2x2 */}
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <button className={`${btnClass} cursor-pointer active:scale-95 transition-transform`} disabled={isCopying} onClick={handleCopy}>
+              <button
+                className={`${btnClass} cursor-pointer active:scale-95 transition-transform`}
+                disabled={isCopying}
+                onClick={handleCopy}
+              >
                 <CopyIcon size={16} />
                 {isCopying ? "已复制" : "复制提示"}
               </button>
-              <button className={`${btnClass} cursor-pointer active:scale-95 transition-transform`} disabled={isDownloading} onClick={handleDownload}>
+              <button
+                className={`${btnClass} cursor-pointer active:scale-95 transition-transform`}
+                disabled={isDownloading}
+                onClick={handleDownload}
+              >
                 <DownloadIcon size={16} />
                 {isDownloading ? "下载中..." : "下载"}
               </button>
-              <button className={`${btnClass} cursor-pointer active:scale-95 transition-transform`} onClick={handleEdit}>
+              <button
+                className={`${btnClass} cursor-pointer active:scale-95 transition-transform`}
+                onClick={handleEdit}
+              >
                 <EditIcon size={16} />
                 继续编辑
               </button>
-              <button className={`${btnClass} cursor-pointer active:scale-95 transition-transform`} onClick={handleDelete}>
+              <button
+                className={`${btnClass} cursor-pointer active:scale-95 transition-transform`}
+                onClick={handleDelete}
+              >
                 <DeleteIcon size={16} />
                 删除
               </button>
@@ -220,10 +247,17 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
               确定要删除这条创作记录吗？此操作不可撤销。
             </p>
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="light" onPress={() => setIsDeleteModalOpen(false)}>
+              <Button
+                variant="light"
+                onPress={() => setIsDeleteModalOpen(false)}
+              >
                 取消
               </Button>
-              <Button color="danger" isLoading={isDeleting} onPress={confirmDelete}>
+              <Button
+                color="danger"
+                isLoading={isDeleting}
+                onPress={confirmDelete}
+              >
                 确认删除
               </Button>
             </div>
@@ -258,7 +292,9 @@ export default function MyCreationsPage() {
       const res = await getMyCreations(pageNum, 12);
 
       if (res.code === 200 || res.code === 0) {
-        setList((prev) => (pageNum === 1 ? res.data.list : [...prev, ...res.data.list]));
+        setList((prev) =>
+          pageNum === 1 ? res.data.list : [...prev, ...res.data.list],
+        );
         setTotalPages(res.data.pagination.totalPages);
         setPage(pageNum);
       }
@@ -281,6 +317,7 @@ export default function MyCreationsPage() {
 
       if (!t) {
         router.replace("/login");
+
         return;
       }
       fetchData(1);
@@ -315,9 +352,14 @@ export default function MyCreationsPage() {
       if (timer) return;
       timer = setTimeout(() => {
         timer = null;
-        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        const { scrollTop, scrollHeight, clientHeight } =
+          document.documentElement;
 
-        if (scrollHeight - scrollTop - clientHeight < 200 && !loadingRef.current && page < totalPages) {
+        if (
+          scrollHeight - scrollTop - clientHeight < 200 &&
+          !loadingRef.current &&
+          page < totalPages
+        ) {
           fetchData(page + 1);
         }
       }, 200);
@@ -375,7 +417,11 @@ export default function MyCreationsPage() {
             {/* 卡片网格 - 一行三个 */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {list.map((item) => (
-                <CreationCard key={item.id} item={item} onDelete={handleDelete} />
+                <CreationCard
+                  key={item.id}
+                  item={item}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
 
@@ -402,8 +448,18 @@ export default function MyCreationsPage() {
           className="fixed right-8 bottom-8 z-40 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-default-100 shadow-lg transition-all active:scale-95 hover:bg-default-200"
           onClick={scrollToTop}
         >
-          <svg className="h-5 w-5 text-default-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M5 15l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+          <svg
+            className="h-5 w-5 text-default-600"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5 15l7-7 7 7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       )}

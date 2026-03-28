@@ -43,7 +43,7 @@ export interface GalleryResponse {
  */
 export const getGalleryList = async (
   page: number = 1,
-  pageSize: number = 20
+  pageSize: number = 20,
 ): Promise<GalleryResponse> => {
   return request.get("/app/gallery", {
     params: { page, pageSize },

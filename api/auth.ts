@@ -1,5 +1,6 @@
-import request from "./request";
 import type { UserProfile } from "@/store/useUserStore";
+
+import request from "./request";
 
 // 登录请求参数
 export interface LoginParams {

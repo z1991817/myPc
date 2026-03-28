@@ -80,6 +80,35 @@ export interface GenerateImageResponse {
 
 import request from "./request";
 
+// 模型列表类型
+export interface ModelItem {
+  id: number;
+  name: string;
+  model_key: string;
+  manufacturer: string;
+  description: string;
+  aspect_ratio: string;
+  aspect_ratios: string[];
+  status: number;
+  consume_points: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ModelsResponse {
+  code: number;
+  message: string;
+  data: {
+    total: number;
+    list: ModelItem[];
+  };
+}
+
+// 获取模型列表
+export const getModels = async (): Promise<ModelsResponse> => {
+  return request.get("/app/models");
+};
+
 // 获取图片列表
 export const getImages = async (
   page: number = 1,
@@ -91,7 +120,9 @@ export const getImages = async (
 // 上传图片
 export const uploadImage = async (file: File): Promise<UploadImageResponse> => {
   const formData = new FormData();
+
   formData.append("file", file);
+
   return request.post("/app/images/upload", formData);
 };
 
@@ -184,11 +215,21 @@ export interface BananaCreateImageResponse {
  * @param model 模型 value（如 gemini-3.1-flash-image-preview）
  * @param prompt 提示词
  * @param aspectRatio 图片比例（如 "1:1"、"16:9"）
+ * @param type 生成类型：text-to-image 或 image-to-image
+ * @param imageUrls 参考图片URL数组（仅 image-to-image 时需要）
  */
 export const bananaCreateImage = async (
   model: string,
   prompt: string,
   aspectRatio: string,
+  type: "text-to-image" | "image-to-image",
+  imageUrls?: string[],
 ): Promise<BananaCreateImageResponse> => {
-  return request.post("/app/banana-CreateImage", { model, prompt, aspectRatio });
+  return request.post("/app/banana-CreateImage", {
+    model,
+    prompt,
+    aspectRatio,
+    type,
+    ...(imageUrls && imageUrls.length > 0 ? { imageUrls } : {}),
+  });
 };

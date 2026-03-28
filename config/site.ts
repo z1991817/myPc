@@ -13,8 +13,12 @@ export const siteConfig = {
       href: "/gallery",
     },
     {
-      label: "定价",
+      label: "价格",
       href: "/pricing",
+    },
+    {
+      label: "收银台",
+      href: "/checkout",
     },
     {
       label: "我的创作",
