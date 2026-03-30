@@ -23,6 +23,10 @@ const extractPointsPatch = (payload: unknown): Partial<UserProfile> | null => {
     return null;
   }
 
+  if (isPointsValue(payload.currentPoints)) {
+    return { points: payload.currentPoints };
+  }
+
   const directPatch = POINT_KEYS.reduce<Partial<UserProfile>>((acc, key) => {
     const value = payload[key];
 

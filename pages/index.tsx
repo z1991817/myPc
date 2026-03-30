@@ -26,8 +26,8 @@ import {
 
 import DefaultLayout from "@/layouts/default";
 import { getGalleryList, GalleryImageItem } from "@/api/gallery";
+import Aurora from "@/components/Aurora";
 import TopNavbar from "@/components/TopNavbar";
-import Footer from "@/components/Footer";
 
 /* ============================
    类型定义
@@ -516,6 +516,12 @@ export default function IndexNewPage() {
             第一屏 - Hero 网站介绍
             ============================================ */}
         <section className="hero-new-bg relative flex min-h-screen items-center overflow-hidden px-4 sm:px-6 ">
+          <Aurora
+            amplitude={0.9}
+            blend={0.5}
+            colorStops={["#3B82F6", "#6366F1", "#8B5CF6"]}
+            speed={0.9}
+          />
           {/* 网格背景 */}
           <div className="hero-grid-overlay pointer-events-none absolute inset-0" />
 
@@ -1093,7 +1099,6 @@ export default function IndexNewPage() {
       </div>
 
       {/* 底部 Footer */}
-      <Footer />
     </DefaultLayout>
   );
 }

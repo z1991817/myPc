@@ -19,6 +19,7 @@
  
 ## 架构和约束
 - 所有新增组件都要用到heroui的组件，不要自己定义
+- 所有页面的图标都使用lucide-react图标库
 - 所有接口都维护到api文件下方
 - 所有组件必须使用TypeScript
 - 组件文件采用PascalCase命名

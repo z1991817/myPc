@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
   LogIn,
   LogOut,
+  ReceiptText,
   Sparkles,
   User,
   WalletCards,
@@ -221,6 +222,14 @@ const TopNavbar: React.FC = () => {
                       className="h-px bg-divider p-0 opacity-100 lg:hidden"
                     />
 
+                    <DropdownItem
+                      key="my-orders"
+                      className="py-3"
+                      startContent={<ReceiptText className="h-4 w-4" />}
+                      onPress={() => router.push("/my-orders")}
+                    >
+                      我的订单
+                    </DropdownItem>
                     <DropdownItem
                       key="my-creations"
                       className="py-3"
