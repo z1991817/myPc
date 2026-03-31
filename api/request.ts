@@ -1,7 +1,8 @@
 import axios from "axios";
 
-import { useUserStore, type UserProfile } from "@/store/useUserStore";
+import { getApiBaseURL, normalizeApiPath } from "@/lib/api-base-url";
 import { useInsufficientPointsModal } from "@/store/useInsufficientPointsModal";
+import { useUserStore, type UserProfile } from "@/store/useUserStore";
 
 const POINT_KEYS = [
   "points",
@@ -52,14 +53,16 @@ const extractPointsPatch = (payload: unknown): Partial<UserProfile> | null => {
   return null;
 };
 
-// 创建 axios 实例
 const request = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000",
+  baseURL: getApiBaseURL(),
 });
 
-// 请求拦截器：添加 token
 request.interceptors.request.use(
   (config) => {
+    if (config.url) {
+      config.url = normalizeApiPath(config.url);
+    }
+
     const token = useUserStore.getState().token;
 
     if (token) {
@@ -71,7 +74,6 @@ request.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// 响应拦截器：处理错误
 request.interceptors.response.use(
   (response) => {
     const pointsPatch = extractPointsPatch(response.data);
@@ -83,12 +85,10 @@ request.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    // 处理 401 未授权错误
     if (error.response?.status === 401) {
       useUserStore.getState().clearUser();
     }
 
-    // 处理 409 积分不足错误
     if (error.response?.status === 409) {
       const message = error.response?.data?.message || "积分不足";
 

@@ -1,39 +1,26 @@
 import axios from "axios";
 
-// 创建 axios 实例
+import { getApiBaseURL, normalizeApiPath } from "@/lib/api-base-url";
+
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000",
+  baseURL: getApiBaseURL(),
   timeout: 10000,
 });
 
-// 请求拦截器
 axiosInstance.interceptors.request.use(
   (config) => {
-    // 可以在这里添加 token
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
-// 响应拦截器
-axiosInstance.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
-  (error) => {
-    // 统一错误处理
-    if (error.response?.status === 401) {
-      // 处理未授权
+    if (config.url) {
+      config.url = normalizeApiPath(config.url);
     }
 
-    return Promise.reject(error);
+    return config;
   },
+  (error) => Promise.reject(error),
+);
+
+axiosInstance.interceptors.response.use(
+  (response) => response.data,
+  (error) => Promise.reject(error),
 );
 
 export default axiosInstance;
