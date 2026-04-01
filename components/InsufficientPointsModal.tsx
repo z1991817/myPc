@@ -72,7 +72,7 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} shouldBlockScroll={false} onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-warning" />

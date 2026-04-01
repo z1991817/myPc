@@ -257,11 +257,16 @@ export default function RechargeCenter() {
     setCreatingPackageId(packageId);
     try {
       const response = await createRechargeOrder(packageId);
+      const orderId = response.data.order?.id ?? response.data.orderId;
+
+      if (!orderId) {
+        throw new Error("Order ID is missing from the create order response");
+      }
 
       addToast({ title: "订单已创建，请继续支付", color: "success" });
       setActiveTab("orders");
       await fetchOrders(1);
-      await fetchOrderDetail(response.data.order.id, true);
+      await fetchOrderDetail(orderId, true);
     } catch (error: any) {
       addToast({
         title: error?.response?.data?.message || "创建订单失败",
@@ -952,6 +957,7 @@ export default function RechargeCenter() {
         isOpen={detailOpen}
         placement="center"
         scrollBehavior="inside"
+        shouldBlockScroll={false}
         size="3xl"
         onOpenChange={setDetailOpen}
       >

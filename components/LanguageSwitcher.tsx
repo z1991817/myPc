@@ -32,7 +32,7 @@ export const LanguageSwitcher = () => {
     languages.find((lang) => lang.key === locale) || languages[0];
 
   return (
-    <Dropdown>
+    <Dropdown shouldBlockScroll={false}>
       <DropdownTrigger>
         <Button size="sm" variant="bordered">
           <span className="mr-1">{currentLanguage.flag}</span>

@@ -172,6 +172,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }}
       isOpen={isOpen}
       placement="center"
+      shouldBlockScroll={false}
       onClose={handleClose}
     >
       <ModalContent>

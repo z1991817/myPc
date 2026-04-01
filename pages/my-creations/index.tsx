@@ -18,6 +18,8 @@ import {
   EditIcon,
   DeleteIcon,
 } from "@/components/icons";
+import Footer from "@/components/Footer";
+import TopNavbar from "@/components/TopNavbar";
 import { useUserStore } from "@/store/useUserStore";
 
 /** 按钮通用样式 */
@@ -155,7 +157,7 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
       <Card className="overflow-hidden">
         <CardBody className="p-0 overflow-hidden">
           {/* 图片区域 438x438 */}
-          <div className="relative w-[438px] h-[438px] overflow-hidden">
+          <div className="relative aspect-square w-full overflow-hidden">
             {!isLoaded && (
               <Skeleton className="absolute inset-0 w-full h-full" />
             )}
@@ -279,7 +281,6 @@ export default function MyCreationsPage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [showBackTop, setShowBackTop] = useState(false);
   const loadingRef = useRef(false);
-  const token = useUserStore((s) => s.token);
   const router = useRouter();
 
   /** 加载数据 */
@@ -395,51 +396,59 @@ export default function MyCreationsPage() {
   };
 
   return (
-    <DefaultLayout>
-      <div className="mx-auto max-w-[1400px] py-8">
-        {/* 标题区 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">我的创作</h1>
-          <p className="mt-2 text-white">管理和檢視您所有已生成的影片和圖片</p>
-        </div>
-
-        {/* 初始加载 */}
-        {initialLoading ? (
-          <div className="flex justify-center py-20">
-            <Spinner size="lg" />
-          </div>
-        ) : list.length === 0 ? (
-          <div className="flex justify-center py-20 text-default-500">
-            暂无创作记录
-          </div>
-        ) : (
-          <>
-            {/* 卡片网格 - 一行三个 */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {list.map((item) => (
-                <CreationCard
-                  key={item.id}
-                  item={item}
-                  onDelete={handleDelete}
-                />
-              ))}
+    <DefaultLayout fullWidth hideFooter hideNavbar>
+      <div className="min-h-dvh bg-[#030712] text-white">
+        <TopNavbar />
+        <div className="px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pt-32">
+          <div className="mx-auto max-w-7xl">
+            {/* 标题区 */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-white">我的创作</h1>
+              <p className="mt-2 text-white">
+                管理和檢視您所有已生成的影片和圖片
+              </p>
             </div>
 
-            {/* 加载更多指示器 */}
-            {loading && (
-              <div className="flex justify-center py-8">
-                <Spinner size="md" />
+            {/* 初始加载 */}
+            {initialLoading ? (
+              <div className="flex justify-center py-20">
+                <Spinner size="lg" />
               </div>
-            )}
+            ) : list.length === 0 ? (
+              <div className="flex justify-center py-20 text-default-500">
+                暂无创作记录
+              </div>
+            ) : (
+              <>
+                {/* 卡片网格 - 一行三个 */}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {list.map((item) => (
+                    <CreationCard
+                      key={item.id}
+                      item={item}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
 
-            {/* 已加载全部 */}
-            {page >= totalPages && !loading && list.length > 0 && (
-              <div className="py-8 text-center text-sm text-default-500">
-                已加载全部创作
-              </div>
+                {/* 加载更多指示器 */}
+                {loading && (
+                  <div className="flex justify-center py-8">
+                    <Spinner size="md" />
+                  </div>
+                )}
+
+                {/* 已加载全部 */}
+                {page >= totalPages && !loading && list.length > 0 && (
+                  <div className="py-8 text-center text-sm text-default-500">
+                    已加载全部创作
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </div>
+        <Footer />
       </div>
 
       {/* 返回顶部按钮 */}

@@ -16,7 +16,7 @@ export interface PaymentOrder {
   package_name: string;
   amount: number;
   points: number;
-  status: "pending" | "paid" | string;
+  status: "pending" | "paid" | "failed" | string;
   payment_channel: string;
   third_party_order_no: string | null;
   paid_at: string | null;
@@ -64,11 +64,20 @@ export interface PaginatedList<T> {
   totalPages: number;
 }
 
+export interface RechargeOrderPayment {
+  channel?: string;
+  payUrl?: string;
+}
+
 export interface CreateRechargeOrderResponse {
-  order: PaymentOrder;
-  payment: {
-    channel: string;
-  };
+  order?: PaymentOrder;
+  payment?: RechargeOrderPayment;
+  orderId?: number;
+  orderNo?: string;
+  amount?: number;
+  points?: number;
+  packageName?: string;
+  payUrl?: string;
 }
 
 export interface RechargeOrderDetail {
@@ -89,8 +98,12 @@ export const getRechargePackages = (): Promise<
 
 export const createRechargeOrder = (
   packageId: string,
+  payType?: number,
 ): Promise<ApiResponse<CreateRechargeOrderResponse>> =>
-  request.post("/app/recharge/orders", { packageId });
+  request.post("/app/recharge/orders", {
+    packageId,
+    ...(payType ? { payType } : {}),
+  });
 
 export const getRechargeOrders = (
   page: number = 1,

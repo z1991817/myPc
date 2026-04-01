@@ -13,7 +13,6 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Accordion, AccordionItem } from "@heroui/accordion";
-import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import {
   Sparkles,
@@ -367,6 +366,16 @@ const masonryBreakpoints: Record<string, number> = {
 };
 
 const mobileGalleryPreviewCount = 4;
+const gallerySkeletonHeights = [
+  "h-[280px]",
+  "h-[360px]",
+  "h-[320px]",
+  "h-[420px]",
+  "h-[300px]",
+  "h-[380px]",
+  "h-[340px]",
+  "h-[400px]",
+];
 
 /* ============================
    动画与工具函数
@@ -830,9 +839,34 @@ export default function IndexNewPage() {
             </Reveal>
 
             {galleryLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Spinner color="primary" size="lg" />
-              </div>
+              <Reveal delay={0.06}>
+                <Masonry
+                  breakpointCols={masonryBreakpoints}
+                  className="new-masonry-grid"
+                  columnClassName="new-masonry-grid_column"
+                >
+                  {gallerySkeletonHeights.map((heightClass, index) => (
+                    <div
+                      key={`gallery-skeleton-${index}`}
+                      className={`${index >= mobileGalleryPreviewCount ? "hidden md:block " : ""}mb-4`}
+                    >
+                      <Card className="overflow-hidden border border-white/5 bg-white/5">
+                        <CardBody className="p-0">
+                          <div
+                            className={`relative ${heightClass} overflow-hidden bg-white/[0.03]`}
+                          >
+                            <div className="absolute inset-0 animate-pulse bg-[linear-gradient(135deg,rgba(59,130,246,0.12),rgba(168,85,247,0.12),rgba(255,255,255,0.04))]" />
+                          </div>
+                          <div className="space-y-2 p-4">
+                            <div className="h-3 w-5/6 animate-pulse rounded-full bg-white/10" />
+                            <div className="h-3 w-2/3 animate-pulse rounded-full bg-white/6" />
+                          </div>
+                        </CardBody>
+                      </Card>
+                    </div>
+                  ))}
+                </Masonry>
+              </Reveal>
             ) : galleryImages.length > 0 ? (
               <Reveal delay={0.06}>
                 <Masonry

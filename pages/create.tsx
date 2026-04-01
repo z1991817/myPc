@@ -365,6 +365,7 @@ export default function CreatePage() {
                       },
                     }}
                     popoverProps={{
+                      shouldBlockScroll: false,
                       classNames: {
                         content:
                           "border border-white/10 bg-[#111111] text-white",
@@ -408,6 +409,7 @@ export default function CreatePage() {
                       },
                     }}
                     popoverProps={{
+                      shouldBlockScroll: false,
                       classNames: {
                         content:
                           "border border-white/10 bg-[#111111] text-white",
@@ -451,6 +453,7 @@ export default function CreatePage() {
                       },
                     }}
                     popoverProps={{
+                      shouldBlockScroll: false,
                       classNames: {
                         content:
                           "border border-white/10 bg-[#111111] text-white",

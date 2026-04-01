@@ -1,5 +1,6 @@
 import type { AppProps } from "next/app";
 
+import Head from "next/head";
 import { HeroUIProvider } from "@heroui/system";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/router";
@@ -25,6 +26,13 @@ function App({ Component, pageProps }: AppProps) {
     <QueryClientProvider client={queryClient}>
       <HeroUIProvider navigate={router.push}>
         <NextThemesProvider attribute="class" defaultTheme="dark">
+          <Head>
+            <meta
+              key="viewport"
+              content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"
+              name="viewport"
+            />
+          </Head>
           <Component {...pageProps} />
           <ToastProvider />
           {/* 全局积分不足模态框 */}

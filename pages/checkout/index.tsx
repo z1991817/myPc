@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
+import { addToast } from "@heroui/toast";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
+import { Spinner } from "@heroui/spinner";
 import {
   Check,
   Crown,
@@ -13,12 +16,21 @@ import {
   Sparkles,
   WalletCards,
 } from "lucide-react";
+import QRCode from "qrcode";
 
+import {
+  createRechargeOrder,
+  getPointsLogs,
+  getRechargeOrderDetail,
+  getRechargePackages,
+  type RechargePackage,
+} from "@/api/recharge";
 import Footer from "@/components/Footer";
 import TopNavbar from "@/components/TopNavbar";
 import DefaultLayout from "@/layouts/default";
+import { useUserStore } from "@/store/useUserStore";
 
-type Plan = {
+type PlanTemplate = {
   id: number;
   name: string;
   price: string;
@@ -28,7 +40,21 @@ type Plan = {
   isPopular: boolean;
 };
 
-const plans: Plan[] = [
+type CheckoutPlan = PlanTemplate & {
+  amount: number | null;
+  packageId: string | null;
+  points: number | null;
+};
+
+type ActivePayment = {
+  amount: number | null;
+  orderId: number;
+  packageName: string;
+  payUrl: string;
+  points: number | null;
+};
+
+const PLAN_TEMPLATES: PlanTemplate[] = [
   {
     id: 1,
     name: "尝鲜体验包",
@@ -36,9 +62,9 @@ const plans: Plan[] = [
     description: "适合第一次购买，快速体验生成效果。",
     credits: "1,000 积分",
     features: [
-      "约可生成 20 张 Banana2 顶级图像",
+      "约可生成 20 张 Banana2 高级图像",
       "或 50 张基础图像",
-      "无水印下载",
+      "支持无水印下载",
     ],
     isPopular: false,
   },
@@ -49,9 +75,9 @@ const plans: Plan[] = [
     description: "适合高频创作，积分更充足，性价比更高。",
     credits: "4,500 + 500 积分",
     features: [
-      "约可生成 90 张 Banana2 顶级图像",
+      "约可生成 90 张 Banana2 高级图像",
       "优先排队出图特权",
-      "无水印下载",
+      "支持无水印下载",
       "商业使用许可",
     ],
     isPopular: true,
@@ -73,19 +99,322 @@ const plans: Plan[] = [
   },
 ];
 
+const PLAN_PACKAGE_IDS: Record<number, string> = {
+  1: "recharge_9_9",
+  2: "recharge_39_9",
+  3: "recharge_99",
+};
+
 const planIcons: Record<number, LucideIcon> = {
   1: Gift,
   2: Sparkles,
   3: Crown,
 };
 
+const MAX_POLL_TIMES = 100;
+const POLL_INTERVAL_MS = 3000;
+const QR_CODE_SIZE = 480;
+
+const formatCurrency = (value: number) =>
+  `¥${new Intl.NumberFormat("zh-CN", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+  }).format(value)}`;
+
+const formatPoints = (value: number) =>
+  `${new Intl.NumberFormat("zh-CN").format(value)} 积分`;
+
 export default function CheckoutPage() {
+  const router = useRouter();
+  const token = useUserStore((state) => state.token);
+  const patchUser = useUserStore((state) => state.patchUser);
+
+  const [hydrated, setHydrated] = useState(false);
+  const [packages, setPackages] = useState<RechargePackage[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
   const [selectedPlanId, setSelectedPlanId] = useState<number>(2);
+  const [creatingPlanId, setCreatingPlanId] = useState<number | null>(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [activePayment, setActivePayment] = useState<ActivePayment | null>(
+    null,
+  );
+
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollCountRef = useRef(0);
+
+  useEffect(() => {
+    setHydrated(useUserStore.persist.hasHydrated());
+    const unsubscribe = useUserStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    pollCountRef.current = 0;
+  }, []);
+
+  const clearPaymentFlow = useCallback(() => {
+    stopPolling();
+    setIsQrOpen(false);
+    setQrCodeDataUrl(null);
+    setActivePayment(null);
+  }, [stopPolling]);
+
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, [stopPolling]);
+
+  useEffect(() => {
+    if (!hydrated || !token) {
+      if (hydrated) {
+        setPackagesLoading(false);
+      }
+
+      return;
+    }
+
+    const fetchPackages = async () => {
+      setPackagesLoading(true);
+
+      try {
+        const response = await getRechargePackages();
+
+        setPackages(response.data);
+      } catch (error: any) {
+        addToast({
+          title: error?.response?.data?.message || "套餐加载失败",
+          color: "danger",
+        });
+      } finally {
+        setPackagesLoading(false);
+      }
+    };
+
+    void fetchPackages();
+  }, [hydrated, token]);
+
+  const plans = useMemo<CheckoutPlan[]>(
+    () =>
+      PLAN_TEMPLATES.map((template) => {
+        const packageId = PLAN_PACKAGE_IDS[template.id];
+        const matchedPackage = packages.find((item) => item.id === packageId);
+
+        return {
+          ...template,
+          amount: matchedPackage?.amount ?? null,
+          credits:
+            matchedPackage?.points !== undefined
+              ? formatPoints(matchedPackage.points)
+              : template.credits,
+          name: matchedPackage?.name ?? template.name,
+          packageId,
+          points: matchedPackage?.points ?? null,
+          price:
+            matchedPackage?.amount !== undefined
+              ? formatCurrency(matchedPackage.amount)
+              : template.price,
+        };
+      }),
+    [packages],
+  );
 
   const selectedPlan = useMemo(
     () => plans.find((plan) => plan.id === selectedPlanId) ?? plans[1],
-    [selectedPlanId],
+    [plans, selectedPlanId],
+  );
+
+  const modalAmount = activePayment?.amount ?? selectedPlan?.amount ?? null;
+  const modalPoints = activePayment?.points ?? selectedPlan?.points ?? null;
+  const modalPackageName =
+    activePayment?.packageName ?? selectedPlan?.name ?? "";
+
+  const refreshUserPoints = useCallback(async () => {
+    try {
+      const response = await getPointsLogs(1, 1);
+      const latestBalance = response.data.list[0]?.balance_after;
+
+      if (typeof latestBalance === "number") {
+        patchUser({ points: latestBalance });
+      }
+    } catch {
+      // Ignore refresh failures after payment success.
+    }
+  }, [patchUser]);
+
+  const pollOrderStatus = useCallback(
+    async (orderId: number) => {
+      pollCountRef.current += 1;
+
+      if (pollCountRef.current > MAX_POLL_TIMES) {
+        stopPolling();
+        addToast({
+          title: "支付超时，如已支付请稍后刷新确认积分到账",
+          color: "warning",
+        });
+
+        return;
+      }
+
+      try {
+        const response = await getRechargeOrderDetail(orderId);
+        const status = response.data.order.status;
+
+        if (status === "paid") {
+          stopPolling();
+          await refreshUserPoints();
+          clearPaymentFlow();
+          addToast({ title: "支付成功，积分已到账", color: "success" });
+
+          return;
+        }
+
+        if (status === "failed") {
+          stopPolling();
+          addToast({ title: "支付失败，请重新发起支付", color: "danger" });
+
+          return;
+        }
+      } catch {
+        if (pollCountRef.current >= MAX_POLL_TIMES) {
+          stopPolling();
+          addToast({
+            title: "订单状态查询失败，请稍后在订单页确认支付结果",
+            color: "warning",
+          });
+
+          return;
+        }
+      }
+
+      pollTimerRef.current = setTimeout(() => {
+        void pollOrderStatus(orderId);
+      }, POLL_INTERVAL_MS);
+    },
+    [clearPaymentFlow, refreshUserPoints, stopPolling],
+  );
+
+  const openPaymentModal = useCallback(
+    async (payment: ActivePayment) => {
+      const qrCode = await QRCode.toDataURL(payment.payUrl, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        width: QR_CODE_SIZE,
+      });
+
+      setActivePayment(payment);
+      setQrCodeDataUrl(qrCode);
+      setIsQrOpen(true);
+      stopPolling();
+      pollCountRef.current = 0;
+      void pollOrderStatus(payment.orderId);
+    },
+    [pollOrderStatus, stopPolling],
+  );
+
+  const handlePurchase = useCallback(
+    async (planId: number) => {
+      setSelectedPlanId(planId);
+
+      if (!hydrated) {
+        return;
+      }
+
+      if (!token) {
+        addToast({ title: "请先登录后再购买", color: "warning" });
+        void router.push("/login");
+
+        return;
+      }
+
+      const targetPlan = plans.find((plan) => plan.id === planId);
+
+      if (!targetPlan?.packageId) {
+        addToast({
+          title: packagesLoading
+            ? "套餐加载中，请稍后重试"
+            : "当前套餐暂不可购买",
+          color: "warning",
+        });
+
+        return;
+      }
+
+      setCreatingPlanId(planId);
+
+      try {
+        const response = await createRechargeOrder(targetPlan.packageId, 2);
+        const orderId = response.data.order?.id ?? response.data.orderId;
+        const payUrl = response.data.payment?.payUrl ?? response.data.payUrl;
+
+        if (!orderId || !payUrl) {
+          throw new Error("Missing pay order response");
+        }
+
+        const payment: ActivePayment = {
+          amount:
+            response.data.order?.amount ??
+            response.data.amount ??
+            targetPlan.amount,
+          orderId,
+          packageName:
+            response.data.order?.package_name ??
+            response.data.packageName ??
+            targetPlan.name,
+          payUrl,
+          points:
+            response.data.order?.points ??
+            response.data.points ??
+            targetPlan.points,
+        };
+
+        if (/^https?:\/\//i.test(payUrl)) {
+          stopPolling();
+          window.location.href = payUrl;
+
+          return;
+        }
+
+        await openPaymentModal(payment);
+      } catch (error: any) {
+        addToast({
+          title: error?.response?.data?.message || "创建订单失败",
+          color: "danger",
+        });
+      } finally {
+        setCreatingPlanId(null);
+      }
+    },
+    [
+      hydrated,
+      openPaymentModal,
+      packagesLoading,
+      plans,
+      router,
+      stopPolling,
+      token,
+    ],
+  );
+
+  const handleQrOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        clearPaymentFlow();
+
+        return;
+      }
+
+      setIsQrOpen(true);
+    },
+    [clearPaymentFlow],
   );
 
   return (
@@ -111,15 +440,15 @@ export default function CheckoutPage() {
                   startContent={<ShieldCheck className="ml-2 h-3.5 w-3.5" />}
                   variant="flat"
                 >
-                  简洁支付
+                  安全支付
                 </Chip>
               </div>
 
               <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                选择套餐，立即购买。
+                选择套餐，立即购买
               </h1>
               <p className="mt-4 text-base leading-8 text-white/60 sm:text-lg">
-                页面只保留三个套餐和购买入口。点击按钮后，直接弹出对应套餐的收款二维码。
+                页面仅保留三个套餐和购买入口。点击按钮后，直接弹出对应套餐的支付二维码。
               </p>
             </div>
 
@@ -254,12 +583,16 @@ export default function CheckoutPage() {
                             ? "mt-8 h-14 w-full bg-gradient-to-r from-orange-500 to-purple-500 font-bold text-white shadow-xl shadow-orange-500/30 transition-all hover:shadow-2xl hover:shadow-orange-500/40"
                             : "mt-8 h-14 w-full border-white/10 font-semibold text-white/80 hover:border-white/20 hover:bg-white/5 hover:text-white"
                         }
+                        isDisabled={
+                          creatingPlanId !== null ||
+                          (packagesLoading && creatingPlanId !== plan.id)
+                        }
+                        isLoading={creatingPlanId === plan.id}
                         radius="full"
                         size="lg"
                         variant={plan.isPopular ? "solid" : "bordered"}
                         onPress={() => {
-                          setSelectedPlanId(plan.id);
-                          setIsQrOpen(true);
+                          void handlePurchase(plan.id);
                         }}
                       >
                         立即购买
@@ -278,13 +611,11 @@ export default function CheckoutPage() {
           isOpen={isQrOpen}
           placement="center"
           size="md"
-          onOpenChange={setIsQrOpen}
+          onOpenChange={handleQrOpenChange}
         >
           <ModalContent className="border border-white/10 bg-[#08111f] text-white">
             <ModalHeader className="flex flex-col gap-1 px-6 pt-6">
-              <span className="text-2xl font-semibold">
-                {selectedPlan.name}
-              </span>
+              <span className="text-2xl font-semibold">{modalPackageName}</span>
               <span className="text-sm font-normal text-white/55">
                 使用微信或支付宝扫码支付
               </span>
@@ -292,19 +623,33 @@ export default function CheckoutPage() {
             <ModalBody className="px-6 pb-6 pt-2">
               <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-5 text-center">
                 <div className="mx-auto flex aspect-square w-full max-w-[240px] items-center justify-center rounded-[1.75rem] bg-[linear-gradient(135deg,#f8fafc_0%,#dbeafe_100%)] text-slate-900">
-                  <div className="flex h-[78%] w-[78%] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white">
-                    <QrCode className="h-32 w-32" />
+                  <div className="flex h-[78%] w-[78%] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                    {qrCodeDataUrl ? (
+                      <img
+                        alt="支付二维码"
+                        className="h-full w-full rounded-[1rem] object-contain"
+                        src={qrCodeDataUrl}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        {activePayment ? (
+                          <Spinner color="primary" />
+                        ) : (
+                          <QrCode className="h-32 w-32" />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <p className="mt-5 text-4xl font-semibold tracking-tight text-white">
-                  {selectedPlan.price}
+                  {modalAmount !== null ? formatCurrency(modalAmount) : "--"}
                 </p>
                 <p className="mt-2 text-base font-semibold text-blue-200/85">
-                  获得 {selectedPlan.credits}
+                  获得 {modalPoints !== null ? formatPoints(modalPoints) : "--"}
                 </p>
                 <p className="mt-3 text-sm leading-7 text-white/60">
-                  支付成功后，对应套餐权益会自动到账。
+                  支付成功后，对应套餐权益会自动到账。请在 5 分钟内完成支付。
                 </p>
               </div>
             </ModalBody>

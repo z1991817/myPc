@@ -18,6 +18,8 @@ import { useRouter } from "next/router";
 import DefaultLayout from "@/layouts/default";
 import { getGalleryList, GalleryImageItem } from "@/api/gallery";
 import { CopyIcon } from "@/components/icons";
+import Footer from "@/components/Footer";
+import TopNavbar from "@/components/TopNavbar";
 
 /**
  * 图片卡片组件 Props
@@ -267,8 +269,11 @@ export default function GalleryPage() {
   }, [handleScroll]);
 
   return (
-    <DefaultLayout>
-      <div className="max-w-[1280px] mx-auto px-4 py-12">
+    <DefaultLayout fullWidth hideFooter hideNavbar>
+      <div className="min-h-dvh bg-[#030712] text-white">
+        <TopNavbar />
+        <div className="px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pt-32">
+          <div className="max-w-[1280px] mx-auto">
         {/* 文字区域 */}
         <motion.div
           animate={{ opacity: 1, y: 0 }}
@@ -323,12 +328,16 @@ export default function GalleryPage() {
 
         {/* 滚动观察器 */}
         <div ref={observerRef} className="h-1" />
+          </div>
+        </div>
+        <Footer />
       </div>
 
       {/* 图片预览 Modal */}
       <Modal
         isOpen={isModalOpen}
         scrollBehavior="inside"
+        shouldBlockScroll={false}
         size="5xl"
         onClose={handleCloseModal}
       >

@@ -682,6 +682,9 @@ const CreateNew: React.FC = () => {
                       trigger: "min-h-[72px] py-3",
                     }}
                     placeholder="选择模型"
+                    popoverProps={{
+                      shouldBlockScroll: false,
+                    }}
                     renderValue={(items) => {
                       const item = items[0];
                       const model = models.find(
@@ -1213,6 +1216,7 @@ const CreateNew: React.FC = () => {
         {/* 错误提示模态框 */}
         <Modal
           isOpen={isErrorModalOpen}
+          shouldBlockScroll={false}
           onClose={() => setIsErrorModalOpen(false)}
         >
           <ModalContent>

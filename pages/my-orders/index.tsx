@@ -9,7 +9,13 @@ import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
 import { Pagination } from "@heroui/pagination";
 import { Spinner } from "@heroui/spinner";
 import { Tab, Tabs } from "@heroui/tabs";
-import { ArrowUpRight, Clock3, CreditCard, History, ReceiptText } from "lucide-react";
+import {
+  ArrowUpRight,
+  Clock3,
+  CreditCard,
+  History,
+  ReceiptText,
+} from "lucide-react";
 
 import {
   getPointsLogs,
@@ -113,7 +119,9 @@ export default function MyOrdersPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailOrder, setDetailOrder] = useState<PaymentOrder | null>(null);
-  const [detailTransactions, setDetailTransactions] = useState<PaymentTransaction[]>([]);
+  const [detailTransactions, setDetailTransactions] = useState<
+    PaymentTransaction[]
+  >([]);
 
   useEffect(() => {
     setHydrated(useUserStore.persist.hasHydrated());
@@ -213,7 +221,9 @@ export default function MyOrdersPage() {
                   <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-blue-200">
                     <CreditCard className="h-8 w-8" />
                   </div>
-                  <h1 className="text-3xl font-semibold tracking-tight">正在跳转登录</h1>
+                  <h1 className="text-3xl font-semibold tracking-tight">
+                    正在跳转登录
+                  </h1>
                   <p className="max-w-xl text-sm leading-7 text-white/60">
                     我的订单页需要登录后才能查看充值记录和积分流水。
                   </p>
@@ -252,6 +262,7 @@ export default function MyOrdersPage() {
                     </h2>
                   </div>
                   <Tabs
+                    fullWidth
                     aria-label="账单标签"
                     classNames={{
                       base: "w-full md:w-auto",
@@ -264,7 +275,6 @@ export default function MyOrdersPage() {
                         "group-data-[selected=true]:text-white text-white/65",
                     }}
                     color="primary"
-                    fullWidth
                     selectedKey={activeTab}
                     size="lg"
                     variant="light"
@@ -299,7 +309,9 @@ export default function MyOrdersPage() {
                       </div>
                     ) : orders.length === 0 ? (
                       <div className="rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.02] px-4 py-16 text-center">
-                        <p className="text-lg font-medium text-white/86">暂无充值记录</p>
+                        <p className="text-lg font-medium text-white/86">
+                          暂无充值记录
+                        </p>
                         <p className="mt-2 text-sm text-white/52">
                           创建充值订单后，这里会展示订单号、金额、积分和支付状态。
                         </p>
@@ -327,14 +339,18 @@ export default function MyOrdersPage() {
                                   </div>
                                   <div className="flex items-center gap-3">
                                     <div className="text-right">
-                                      <div className="text-sm text-white/45">支付金额</div>
+                                      <div className="text-sm text-white/45">
+                                        支付金额
+                                      </div>
                                       <div className="mt-1 text-2xl font-semibold text-white">
                                         {formatCurrency(item.amount)}
                                       </div>
                                     </div>
                                     <Button
                                       className="border-white/12 text-white/82"
-                                      endContent={<ArrowUpRight className="h-4 w-4" />}
+                                      endContent={
+                                        <ArrowUpRight className="h-4 w-4" />
+                                      }
                                       radius="full"
                                       variant="bordered"
                                       onPress={() => fetchDetail(item.id)}
@@ -345,25 +361,33 @@ export default function MyOrdersPage() {
                                 </div>
                                 <div className="grid gap-3 rounded-[1.5rem] border border-white/10 bg-[#09111e]/90 p-4 md:grid-cols-4">
                                   <div>
-                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">到账积分</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                      到账积分
+                                    </div>
                                     <div className="mt-2 text-base font-medium text-blue-100">
                                       +{formatNumber(item.points)}
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">创建时间</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                      创建时间
+                                    </div>
                                     <div className="mt-2 text-base font-medium">
                                       {formatDateTime(item.created_at)}
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">支付时间</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                      支付时间
+                                    </div>
                                     <div className="mt-2 text-base font-medium">
                                       {formatDateTime(item.paid_at)}
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">支付渠道</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                      支付渠道
+                                    </div>
                                     <div className="mt-2 text-base font-medium uppercase">
                                       {item.payment_channel || "--"}
                                     </div>
@@ -374,15 +398,17 @@ export default function MyOrdersPage() {
                           ))}
                         </div>
                         <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="text-sm text-white/55">共 {ordersTotal} 笔充值记录</p>
+                          <p className="text-sm text-white/55">
+                            共 {ordersTotal} 笔充值记录
+                          </p>
                           <Pagination
+                            showControls
                             classNames={{
                               item: "bg-white/[0.04] text-white/70",
                               cursor:
                                 "bg-gradient-to-r from-blue-500 to-purple-500 text-white",
                             }}
                             page={ordersPage}
-                            showControls
                             total={Math.max(ordersTotalPages, 1)}
                             onChange={(page) => {
                               void fetchOrders(page);
@@ -402,7 +428,9 @@ export default function MyOrdersPage() {
                       </div>
                     ) : logs.length === 0 ? (
                       <div className="rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.02] px-4 py-16 text-center">
-                        <p className="text-lg font-medium text-white/86">暂无积分流水</p>
+                        <p className="text-lg font-medium text-white/86">
+                          暂无积分流水
+                        </p>
                         <p className="mt-2 text-sm text-white/52">
                           后续到账、扣费和赠送都会按时间倒序出现在这里。
                         </p>
@@ -423,7 +451,8 @@ export default function MyOrdersPage() {
                                     <div>
                                       <div className="flex flex-wrap items-center gap-3">
                                         <h3 className="text-lg font-semibold">
-                                          {logTypeMap[item.change_type] || item.change_type}
+                                          {logTypeMap[item.change_type] ||
+                                            item.change_type}
                                         </h3>
                                         <Chip
                                           className={
@@ -441,26 +470,36 @@ export default function MyOrdersPage() {
                                         {formatDateTime(item.created_at)}
                                       </p>
                                     </div>
-                                    <div className={`text-2xl font-semibold tracking-tight ${positive ? "text-emerald-200" : "text-rose-200"}`}>
+                                    <div
+                                      className={`text-2xl font-semibold tracking-tight ${positive ? "text-emerald-200" : "text-rose-200"}`}
+                                    >
                                       {positive ? "+" : ""}
                                       {formatNumber(item.change_amount)}
                                     </div>
                                   </div>
                                   <div className="grid gap-3 rounded-[1.5rem] border border-white/10 bg-[#09111e]/90 p-4 md:grid-cols-3">
                                     <div>
-                                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">变动后余额</div>
+                                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                        变动后余额
+                                      </div>
                                       <div className="mt-2 text-base font-medium">
                                         {formatNumber(item.balance_after)}
                                       </div>
                                     </div>
                                     <div>
-                                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">关联订单</div>
+                                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                        关联订单
+                                      </div>
                                       <div className="mt-2 text-base font-medium">
-                                        {item.order_id ? `#${item.order_id}` : "--"}
+                                        {item.order_id
+                                          ? `#${item.order_id}`
+                                          : "--"}
                                       </div>
                                     </div>
                                     <div>
-                                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">备注</div>
+                                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                        备注
+                                      </div>
                                       <div className="mt-2 text-base font-medium text-white/78">
                                         {item.remark || "--"}
                                       </div>
@@ -472,15 +511,17 @@ export default function MyOrdersPage() {
                           })}
                         </div>
                         <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="text-sm text-white/55">共 {logsTotal} 条积分流水</p>
+                          <p className="text-sm text-white/55">
+                            共 {logsTotal} 条积分流水
+                          </p>
                           <Pagination
+                            showControls
                             classNames={{
                               item: "bg-white/[0.04] text-white/70",
                               cursor:
                                 "bg-gradient-to-r from-blue-500 to-purple-500 text-white",
                             }}
                             page={logsPage}
-                            showControls
                             total={Math.max(logsTotalPages, 1)}
                             onChange={(page) => {
                               void fetchLogs(page);
@@ -500,12 +541,15 @@ export default function MyOrdersPage() {
           isOpen={detailOpen}
           placement="center"
           scrollBehavior="inside"
+          shouldBlockScroll={false}
           size="3xl"
           onOpenChange={setDetailOpen}
         >
           <ModalContent className="border border-white/10 bg-[#09111d] text-white">
             <ModalHeader className="flex flex-col gap-2 border-b border-white/10 px-6 py-5">
-              <span className="text-2xl font-semibold tracking-tight">订单详情</span>
+              <span className="text-2xl font-semibold tracking-tight">
+                订单详情
+              </span>
               {detailOrder ? (
                 <span className="text-sm font-normal text-white/55">
                   {detailOrder.order_no}
@@ -521,7 +565,9 @@ export default function MyOrdersPage() {
                 <div className="space-y-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-xl font-semibold">{detailOrder.package_name}</h3>
+                      <h3 className="text-xl font-semibold">
+                        {detailOrder.package_name}
+                      </h3>
                       <p className="mt-2 text-sm text-white/55">
                         创建于 {formatDateTime(detailOrder.created_at)}
                       </p>
@@ -540,23 +586,37 @@ export default function MyOrdersPage() {
                       >
                         <CardBody className="p-4">
                           <div className="text-sm text-white/55">{label}</div>
-                          <div className="mt-2 text-xl font-semibold">{value}</div>
+                          <div className="mt-2 text-xl font-semibold">
+                            {value}
+                          </div>
                         </CardBody>
                       </Card>
                     ))}
                   </div>
                   <div className="grid gap-3 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 md:grid-cols-3">
                     <div>
-                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">支付时间</div>
-                      <div className="mt-2 text-sm text-white/82">{formatDateTime(detailOrder.paid_at)}</div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                        支付时间
+                      </div>
+                      <div className="mt-2 text-sm text-white/82">
+                        {formatDateTime(detailOrder.paid_at)}
+                      </div>
                     </div>
                     <div>
-                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">支付渠道</div>
-                      <div className="mt-2 text-sm uppercase text-white/82">{detailOrder.payment_channel || "--"}</div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                        支付渠道
+                      </div>
+                      <div className="mt-2 text-sm uppercase text-white/82">
+                        {detailOrder.payment_channel || "--"}
+                      </div>
                     </div>
                     <div>
-                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">更新时间</div>
-                      <div className="mt-2 text-sm text-white/82">{formatDateTime(detailOrder.updated_at)}</div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                        更新时间
+                      </div>
+                      <div className="mt-2 text-sm text-white/82">
+                        {formatDateTime(detailOrder.updated_at)}
+                      </div>
                     </div>
                   </div>
                   <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5">
@@ -566,7 +626,9 @@ export default function MyOrdersPage() {
                       </div>
                       <div>
                         <h4 className="text-lg font-semibold">交易流水</h4>
-                        <p className="mt-1 text-sm text-white/55">显示该订单关联的支付记录。</p>
+                        <p className="mt-1 text-sm text-white/55">
+                          显示该订单关联的支付记录。
+                        </p>
                       </div>
                     </div>
                     {detailTransactions.length > 0 ? (
@@ -578,8 +640,12 @@ export default function MyOrdersPage() {
                           >
                             <div className="flex flex-wrap items-center justify-between gap-3">
                               <div>
-                                <div className="text-base font-medium">{item.transaction_type}</div>
-                                <div className="mt-1 text-sm text-white/55">{formatDateTime(item.created_at)}</div>
+                                <div className="text-base font-medium">
+                                  {item.transaction_type}
+                                </div>
+                                <div className="mt-1 text-sm text-white/55">
+                                  {formatDateTime(item.created_at)}
+                                </div>
                               </div>
                               <Chip
                                 className="border border-white/10 bg-white/[0.06] text-white/80"
@@ -591,16 +657,28 @@ export default function MyOrdersPage() {
                             </div>
                             <div className="mt-4 grid gap-3 md:grid-cols-3">
                               <div>
-                                <div className="text-xs uppercase tracking-[0.2em] text-white/42">渠道</div>
-                                <div className="mt-2 text-sm text-white/82">{item.channel || "--"}</div>
+                                <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                  渠道
+                                </div>
+                                <div className="mt-2 text-sm text-white/82">
+                                  {item.channel || "--"}
+                                </div>
                               </div>
                               <div>
-                                <div className="text-xs uppercase tracking-[0.2em] text-white/42">交易号</div>
-                                <div className="mt-2 text-sm text-white/82">{item.trade_no || "--"}</div>
+                                <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                  交易号
+                                </div>
+                                <div className="mt-2 text-sm text-white/82">
+                                  {item.trade_no || "--"}
+                                </div>
                               </div>
                               <div>
-                                <div className="text-xs uppercase tracking-[0.2em] text-white/42">更新时间</div>
-                                <div className="mt-2 text-sm text-white/82">{formatDateTime(item.updated_at)}</div>
+                                <div className="text-xs uppercase tracking-[0.2em] text-white/42">
+                                  更新时间
+                                </div>
+                                <div className="mt-2 text-sm text-white/82">
+                                  {formatDateTime(item.updated_at)}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -614,7 +692,9 @@ export default function MyOrdersPage() {
                   </div>
                 </div>
               ) : (
-                <div className="py-10 text-center text-sm text-white/55">未找到订单详情。</div>
+                <div className="py-10 text-center text-sm text-white/55">
+                  未找到订单详情。
+                </div>
               )}
             </ModalBody>
           </ModalContent>
