@@ -14,6 +14,8 @@ import { useUserStore } from "@/store/useUserStore";
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
+  redirectTo?: string | null;
 }
 
 /** 表单模式 */
@@ -23,7 +25,12 @@ type FormMode = "login" | "register";
  * 登录/注册弹窗组件
  * 支持登录和注册切换，使用 HeroUI Modal
  */
-export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export default function LoginModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  redirectTo = "/",
+}: LoginModalProps) {
   const { setToken, setUser } = useUserStore();
   const router = useRouter();
   const [mode, setMode] = useState<FormMode>("login");
@@ -145,7 +152,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       }
       handleClose();
       // 跳转首页
-      router.push("/");
+      onSuccess?.();
+      if (redirectTo) {
+        void router.push(redirectTo);
+      }
     } catch (err: any) {
       const defaultMsg =
         mode === "login"

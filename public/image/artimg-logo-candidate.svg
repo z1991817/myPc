@@ -1,0 +1,26 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path
+    fill="url(#foldedA)"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M31.852 14L14 48H19.992L25.394 37.59H40.696L46.046 48H52L34.252 14H31.852ZM28.106 32.498L33.02 23.032L37.932 32.498H28.106Z"
+  />
+  <path
+    d="M29.268 29.5L33 22.312L36.732 29.5"
+    stroke="url(#innerA)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <defs>
+    <linearGradient id="foldedA" x1="14" y1="14" x2="49" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67E8F9"/>
+      <stop offset="0.48" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="innerA" x1="29.5" y1="22.312" x2="36.2" y2="29.9" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#7DD3FC"/>
+    </linearGradient>
+  </defs>
+</svg>

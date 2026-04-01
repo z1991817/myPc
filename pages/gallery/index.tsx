@@ -128,9 +128,9 @@ export default function GalleryPage() {
     try {
       await navigator.clipboard.writeText(text);
       // 可以添加 toast 提示
-      alert("提示詞已複製到剪貼板");
+      alert("提示词已复制到剪贴板");
     } catch (error) {
-      console.error("複製失敗:", error);
+      console.error("复制失败:", error);
     }
   };
 
@@ -282,11 +282,11 @@ export default function GalleryPage() {
           transition={{ duration: 0.6 }}
         >
           <h1 className="tracking-tight inline font-semibold from-[#FF1CF7] to-[#b249f8] text-[clamp(1rem,10vw,2rem)] sm:text-[clamp(1rem,10vw,3rem)] lg:text-5xl bg-clip-text text-transparent bg-linear-to-b">
-            AI 藝術圖庫
+            AI 艺术图库
           </h1>
           <p className="text-lg text-default-600 max-w-3xl mx-auto">
-            探索令人驚嘆的 AI
-            生成圖像，並發掘其背後的提示詞。獲取靈感，創造您自己的傑作。
+            探索令人惊叹的 AI
+            生成图像，並发掘其背后的提示词。获取灵感，创造您自己的杰作。
           </p>
         </motion.div>
 
@@ -317,13 +317,13 @@ export default function GalleryPage() {
         {/* 没有更多数据提示 */}
         {!hasMore && images.length > 0 && (
           <div className="text-center py-8 text-default-500">
-            沒有更多圖片了
+            沒有更多图片了
           </div>
         )}
 
         {/* 空状态 */}
         {!loading && images.length === 0 && (
-          <div className="text-center py-16 text-default-500">暫無圖片數據</div>
+          <div className="text-center py-16 text-default-500">暂无图片数据</div>
         )}
 
         {/* 滚动观察器 */}
@@ -345,7 +345,7 @@ export default function GalleryPage() {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                圖片詳情
+                图片详情
               </ModalHeader>
               <ModalBody>
                 {selectedImage && (
@@ -365,7 +365,7 @@ export default function GalleryPage() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-sm font-semibold text-default-700">
-                            提示詞
+                            提示词
                           </h3>
                           <button
                             className="p-1.5 rounded-lg hover:bg-default-200 transition-colors"
@@ -388,12 +388,12 @@ export default function GalleryPage() {
                       {/* 类型 */}
                       <div>
                         <h3 className="text-sm font-semibold mb-2 text-default-700">
-                          類型
+                          类型
                         </h3>
                         <p className="text-sm text-default-600">
                           {selectedImage.generation_type === "text-to-image"
-                            ? "文字生成圖片"
-                            : "圖片生成圖片"}
+                            ? "文字生成图片"
+                            : "图片生成图片"}
                         </p>
                       </div>
 
@@ -425,13 +425,13 @@ export default function GalleryPage() {
                           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary shadow hover:bg-primary/90 px-4 py-2 w-full h-12 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-medium"
                           onPress={handleCreateSimilar}
                         >
-                          製作同款
+                          制作同款
                         </Button>
                         <Button
                           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-default-200 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground px-4 py-2 w-full h-12 font-medium"
                           onPress={handleReferenceImage}
                         >
-                          引用圖片
+                          引用图片
                         </Button>
                       </div>
                     </div>
@@ -440,7 +440,7 @@ export default function GalleryPage() {
               </ModalBody>
               <ModalFooter>
                 <Button color="default" variant="light" onPress={onClose}>
-                  關閉
+                  关闭
                 </Button>
               </ModalFooter>
             </>

@@ -8,6 +8,7 @@ import { Card } from "@heroui/card";
 import { Switch } from "@heroui/switch";
 import { addToast } from "@heroui/toast";
 import {
+  useDisclosure,
   Modal,
   ModalContent,
   ModalHeader,
@@ -31,8 +32,10 @@ import {
   bananaCreateImage,
   getModels,
 } from "@/api/images";
+import LoginModal from "@/components/LoginModal";
 import TopNavbar from "@/components/TopNavbar";
 import Footer from "@/components/Footer";
+import { useUserStore } from "@/store/useUserStore";
 
 /**
  * 从markdown内容中提取图片URL
@@ -120,6 +123,13 @@ interface GeneratedImage {
  * GPT Image 1.5 生成器页面
  */
 const CreateNew: React.FC = () => {
+  const token = useUserStore((state) => state.token);
+  const [hydrated, setHydrated] = useState(false);
+  const {
+    isOpen: isLoginOpen,
+    onOpen: onLoginOpen,
+    onClose: onLoginClose,
+  } = useDisclosure();
   // 状态管理
   const [activeTab, setActiveTab] = useState<TabType>("text-to-image");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("1:1");
@@ -160,6 +170,7 @@ const CreateNew: React.FC = () => {
 
     return buildAspectRatioOptions(selectedModelData.aspect_ratios, isGPTModel);
   }, [selectedModelData, isGPTModel]);
+  const currentModelName = selectedModelData?.name ?? "当前模型";
 
   // 切换模型时重置比例为第一个选项
   useEffect(() => {
@@ -183,6 +194,17 @@ const CreateNew: React.FC = () => {
   }, []);
 
   // 计算提示词字符数
+  useEffect(() => {
+    setHydrated(useUserStore.persist.hasHydrated());
+    const unsubscribe = useUserStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const promptLength = useMemo(() => prompt.length, [prompt]);
 
   // 验证表单是否可提交
@@ -270,7 +292,14 @@ const CreateNew: React.FC = () => {
    */
   const handleGenerate = async () => {
     if (!canGenerate) return;
+    if (!hydrated) return;
+    if (hydrated && !token) {
+      onLoginOpen();
+      return;
+    }
 
+    setGeneratedImages([]);
+    setPreviewImage(null);
     setIsGenerating(true);
     setLoadingPlaceholders(1);
 
@@ -319,7 +348,7 @@ const CreateNew: React.FC = () => {
               isLoaded: false,
             };
 
-            setGeneratedImages((prev) => [newImage, ...prev]);
+            setGeneratedImages([newImage]);
 
             addToast({
               title: "生成成功",
@@ -370,7 +399,7 @@ const CreateNew: React.FC = () => {
               }),
             );
 
-            setGeneratedImages((prev) => [...newImages, ...prev]);
+            setGeneratedImages(newImages);
 
             // 显示成功提示
             addToast({
@@ -409,7 +438,7 @@ const CreateNew: React.FC = () => {
               isLoaded: false,
             };
 
-            setGeneratedImages((prev) => [newImage, ...prev]);
+            setGeneratedImages([newImage]);
 
             // 显示成功提示
             addToast({
@@ -437,7 +466,7 @@ const CreateNew: React.FC = () => {
                 isLoaded: false,
               }));
 
-            setGeneratedImages((prev) => [...newImages, ...prev]);
+            setGeneratedImages(newImages);
 
             // 显示成功提示
             addToast({
@@ -979,7 +1008,7 @@ const CreateNew: React.FC = () => {
                 <Button
                   className="w-full font-semibold bg-gradient-to-r from-primary to-secondary"
                   color="primary"
-                  isDisabled={!canGenerate}
+                  isDisabled={!canGenerate || !hydrated}
                   isLoading={isGenerating}
                   size="lg"
                   startContent={!isGenerating && <SparklesIcon size={20} />}
@@ -1048,7 +1077,7 @@ const CreateNew: React.FC = () => {
                                   />
                                 </div>
                                 <p className="text-base font-semibold text-foreground mb-2">
-                                  正在使用 GPT Image 1.5 创作您的图像
+                                  {`正在使用 ${currentModelName} 创作您的图像`}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                   这通常需要 1-3 分钟，具体取决于图像复杂度
@@ -1234,6 +1263,12 @@ const CreateNew: React.FC = () => {
             </ModalFooter>
           </ModalContent>
         </Modal>
+
+        <LoginModal
+          isOpen={isLoginOpen}
+          redirectTo={null}
+          onClose={onLoginClose}
+        />
       </div>
 
       {/* 底部 Footer */}

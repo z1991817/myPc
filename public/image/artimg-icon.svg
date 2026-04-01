@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path
+    fill="url(#artimgMark)"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M32.868 14L18 40H23.86L33.744 22.72L38.336 30.776L42.074 24.118L36.318 14H32.868ZM44.838 28.996L41.87 34.258L46.654 42.656H33.556L30.64 48H56L44.838 28.996Z"
+  />
+  <defs>
+    <linearGradient id="artimgMark" x1="18" y1="14" x2="52" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67E8F9"/>
+      <stop offset="0.52" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+</svg>

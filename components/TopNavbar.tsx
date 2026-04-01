@@ -3,6 +3,12 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "@heroui/button";
 import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerHeader,
+} from "@heroui/drawer";
+import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
@@ -16,6 +22,7 @@ import {
   Image as ImageIcon,
   LogIn,
   LogOut,
+  Menu,
   ReceiptText,
   Sparkles,
   User,
@@ -43,6 +50,11 @@ const TopNavbar: React.FC = () => {
     onOpen: onLoginOpen,
     onClose: onLoginClose,
   } = useDisclosure();
+  const {
+    isOpen: isMobileMenuOpen,
+    onOpen: onMobileMenuOpen,
+    onClose: onMobileMenuClose,
+  } = useDisclosure();
 
   useEffect(() => {
     setHydrated(true);
@@ -57,7 +69,7 @@ const TopNavbar: React.FC = () => {
       return;
     }
 
-    router.push("/#pricing");
+    void router.push("/#pricing");
   };
 
   const displayName = hydrated
@@ -82,6 +94,18 @@ const TopNavbar: React.FC = () => {
         ? rawPoints
         : null;
 
+  const handleNavigate = (href: string) => {
+    onMobileMenuClose();
+
+    if (href === "/#pricing") {
+      scrollToPricing();
+
+      return;
+    }
+
+    void router.push(href);
+  };
+
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#08111f]/80 shadow-2xl shadow-black/20 backdrop-blur-xl">
@@ -91,12 +115,23 @@ const TopNavbar: React.FC = () => {
               className="flex items-center gap-3 transition-opacity hover:opacity-90"
               href="/"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/20">
-                <Logo size={24} />
+              <div className="flex ">
+                <img
+                    alt="ArtImg logo candidate"
+                    className="h-11 w-11 rounded-2xl "
+                    src="/image/artimg-icon.svg"
+                  />
+                {/* <div className="hidden h-7 w-px bg-white/10 sm:block" />
+                <div className="relative hidden sm:block"> */}
+                  
+                  {/* <span className="absolute -right-1.5 -top-1.5 rounded-full border border-sky-300/30 bg-[#08111f] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-sky-200">
+                    New
+                  </span> */}
+                {/* </div> */}
               </div>
               <div>
                 <p className="text-sm font-semibold tracking-wide text-white">
-                  Nano Banana
+                  ArtImg Pro
                 </p>
                 <p className="text-xs text-white/40">AI Image Production</p>
               </div>
@@ -137,7 +172,7 @@ const TopNavbar: React.FC = () => {
               })}
             </nav>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto hidden items-center gap-2 lg:flex">
               {displayName ? (
                 <Dropdown placement="bottom-end" shouldBlockScroll={false}>
                   <DropdownTrigger>
@@ -183,50 +218,11 @@ const TopNavbar: React.FC = () => {
                       isReadOnly
                       className="h-px bg-divider p-0 opacity-100"
                     />
-
-                    <DropdownItem
-                      key="gallery-mobile"
-                      className="py-3 lg:hidden"
-                      startContent={<ImageIcon className="h-4 w-4" />}
-                      onPress={() => router.push("/gallery")}
-                    >
-                      画廊
-                    </DropdownItem>
-                    <DropdownItem
-                      key="create-mobile"
-                      className="py-3 lg:hidden"
-                      startContent={<Sparkles className="h-4 w-4" />}
-                      onPress={() => router.push("/createNew")}
-                    >
-                      AI 图像
-                    </DropdownItem>
-                    <DropdownItem
-                      key="pricing-mobile"
-                      className="py-3 lg:hidden"
-                      startContent={<DollarSign className="h-4 w-4" />}
-                      onPress={scrollToPricing}
-                    >
-                      价格
-                    </DropdownItem>
-                    <DropdownItem
-                      key="checkout-mobile"
-                      className="py-3 lg:hidden"
-                      startContent={<WalletCards className="h-4 w-4" />}
-                      onPress={() => router.push("/checkout")}
-                    >
-                      收银台
-                    </DropdownItem>
-                    <DropdownItem
-                      key="divider-mobile"
-                      isReadOnly
-                      className="h-px bg-divider p-0 opacity-100 lg:hidden"
-                    />
-
                     <DropdownItem
                       key="my-orders"
                       className="py-3"
                       startContent={<ReceiptText className="h-4 w-4" />}
-                      onPress={() => router.push("/my-orders")}
+                      onPress={() => void router.push("/my-orders")}
                     >
                       我的订单
                     </DropdownItem>
@@ -234,7 +230,7 @@ const TopNavbar: React.FC = () => {
                       key="my-creations"
                       className="py-3"
                       startContent={<FolderOpen className="h-4 w-4" />}
-                      onPress={() => router.push("/my-creations")}
+                      onPress={() => void router.push("/my-creations")}
                     >
                       我的创作
                     </DropdownItem>
@@ -245,7 +241,7 @@ const TopNavbar: React.FC = () => {
                       startContent={<LogOut className="h-4 w-4" />}
                       onPress={() => {
                         clearUser();
-                        router.push("/login");
+                        void router.push("/login");
                       }}
                     >
                       退出登录
@@ -264,35 +260,164 @@ const TopNavbar: React.FC = () => {
                 </Button>
               )}
             </div>
-          </div>
 
-          <div className="border-t border-white/8 px-4 py-3 sm:px-6 lg:hidden">
-            <nav className="flex gap-2 overflow-x-auto pb-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <Button
-                    key={`mobile-${item.href}`}
-                    className="shrink-0 border-white/12 bg-white/[0.03] text-sm text-white/75"
-                    radius="full"
-                    size="sm"
-                    startContent={<Icon className="h-4 w-4" />}
-                    variant="bordered"
-                    {...(item.href === "/#pricing"
-                      ? { onPress: scrollToPricing }
-                      : { as: NextLink, href: item.href })}
-                  >
-                    {item.label}
-                  </Button>
-                );
-              })}
-            </nav>
+            <div className="ml-auto flex items-center lg:hidden">
+              <Button
+                isIconOnly
+                aria-label="打开菜单"
+                className="border border-white/15 bg-white/[0.04] text-white shadow-lg shadow-black/20 transition-all duration-300 hover:border-blue-400/50 hover:bg-white/10"
+                radius="full"
+                variant="bordered"
+                onPress={onMobileMenuOpen}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       <LoginModal isOpen={isLoginOpen} onClose={onLoginClose} />
+
+      <Drawer
+        hideCloseButton
+        isOpen={isMobileMenuOpen}
+        placement="right"
+        shouldBlockScroll={false}
+        size="xs"
+        onClose={onMobileMenuClose}
+      >
+        <DrawerContent className="border-l border-white/10 bg-[#07101d] text-white">
+          <DrawerHeader className="border-b border-white/10 px-5 py-5">
+            <div className="flex w-full items-center justify-between gap-3">
+              <div>
+                {/* <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                  Navigation
+                </p> */}
+                <p className="mt-1 text-lg font-semibold text-white">
+                  ArtImg Pro
+                </p>
+              </div>
+              <Button
+                isIconOnly
+                aria-label="关闭菜单"
+                className="border border-white/10 bg-white/5 text-white/80"
+                radius="full"
+                variant="bordered"
+                onPress={onMobileMenuClose}
+              >
+                <span className="text-lg leading-none">x</span>
+              </Button>
+            </div>
+          </DrawerHeader>
+
+          <DrawerBody className="px-5 py-5">
+            <div className="flex flex-col gap-3">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Button
+                    key={`drawer-${item.href}`}
+                    className="justify-start border-white/10 bg-white/[0.03] px-4 text-left text-white/85 hover:border-blue-400/40 hover:bg-blue-500/10"
+                    radius="lg"
+                    size="lg"
+                    startContent={<Icon className="h-4 w-4" />}
+                    variant="bordered"
+                    onPress={() => handleNavigate(item.href)}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              {displayName ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-sm font-bold text-white shadow-lg shadow-blue-500/20">
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">
+                        {displayName}
+                      </p>
+                      {user?.email ? (
+                        <p className="mt-1 truncate text-xs text-white/45">
+                          {user.email}
+                        </p>
+                      ) : null}
+                      {pointsLabel ? (
+                        <div className="mt-3 inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-gradient-to-r from-amber-400/18 via-yellow-300/18 to-orange-400/18 px-2.5 py-1 text-xs font-semibold text-amber-100">
+                          <Coins className="h-3.5 w-3.5 text-amber-300" />
+                          <span className="tabular-nums">{pointsLabel}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      className="justify-start border-white/10 bg-white/[0.03] text-white/85"
+                      radius="lg"
+                      startContent={<ReceiptText className="h-4 w-4" />}
+                      variant="bordered"
+                      onPress={() => handleNavigate("/my-orders")}
+                    >
+                      我的订单
+                    </Button>
+                    <Button
+                      className="justify-start border-white/10 bg-white/[0.03] text-white/85"
+                      radius="lg"
+                      startContent={<FolderOpen className="h-4 w-4" />}
+                      variant="bordered"
+                      onPress={() => handleNavigate("/my-creations")}
+                    >
+                      我的创作
+                    </Button>
+                    <Button
+                      className="justify-start border-danger/30 bg-danger/10 text-danger"
+                      radius="lg"
+                      startContent={<LogOut className="h-4 w-4" />}
+                      variant="bordered"
+                      onPress={() => {
+                        clearUser();
+                        onMobileMenuClose();
+                        void router.push("/login");
+                      }}
+                    >
+                      退出登录
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      登录后继续创作
+                    </p>
+                    <p className="mt-1 text-xs leading-6 text-white/45">
+                      登录后可查看订单、管理创作记录并同步账户积分。
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 font-semibold text-white shadow-lg shadow-blue-500/20"
+                    radius="lg"
+                    startContent={<LogIn className="h-4 w-4" />}
+                    onPress={() => {
+                      onMobileMenuClose();
+                      onLoginOpen();
+                    }}
+                  >
+                    登录
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };
