@@ -59,3 +59,5 @@ Licensed under the [MIT license](https://github.com/heroui-inc/next-pages-templa
 这个项目已经接入了 GitHub Actions 自动部署。
 ## 发布流程
 当你向 `main` 或 `master` 分支执行 `git push` 时，GitHub Actions 会自动通过 SSH 登录服务器
+
+试试
