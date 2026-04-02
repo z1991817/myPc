@@ -16,6 +16,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate deploy secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          test -n "$DEPLOY_HOST" || { echo "DEPLOY_HOST is empty"; exit 1; }
+          test -n "$DEPLOY_PORT" || { echo "DEPLOY_PORT is empty"; exit 1; }
+          test -n "$DEPLOY_USER" || { echo "DEPLOY_USER is empty"; exit 1; }
+          test -n "$DEPLOY_SSH_KEY" || { echo "DEPLOY_SSH_KEY is empty"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "DEPLOY_PATH is empty"; exit 1; }
+
       - name: Deploy to server over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -23,7 +37,6 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
-          script_stop: true
           command_timeout: 30m
           script: |
             set -e
@@ -35,5 +48,5 @@ jobs:
             git pull origin "$BRANCH"
             pnpm install --frozen-lockfile
             pnpm build
-            pm2 startOrReload ecosystem.config.cjs --update-env
+            pm2 reload next-pages-template || pm2 start ecosystem.config.cjs --only next-pages-template
             pm2 save
