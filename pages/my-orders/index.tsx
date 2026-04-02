@@ -33,6 +33,8 @@ type ActiveTab = "orders" | "logs";
 
 const ORDER_PAGE_SIZE = 6;
 const LOG_PAGE_SIZE = 10;
+const PAYMENT_RETURN_MARKER_KEY = "checkout-payment-return";
+const PAYMENT_RETURN_GRACE_MS = 8000;
 
 const orderStatusMap: Record<string, { label: string; className: string }> = {
   pending: {
@@ -105,6 +107,8 @@ export default function MyOrdersPage() {
   const token = useUserStore((state) => state.token);
 
   const [hydrated, setHydrated] = useState(false);
+  const [isPaymentReturnFlow, setIsPaymentReturnFlow] = useState(false);
+  const [authGraceExpired, setAuthGraceExpired] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("orders");
   const [orders, setOrders] = useState<PaymentOrder[]>([]);
   const [logs, setLogs] = useState<PointsLog[]>([]);
@@ -133,11 +137,45 @@ export default function MyOrdersPage() {
   }, []);
 
   useEffect(() => {
+    const hasStorageFlag =
+      typeof window !== "undefined" &&
+      window.sessionStorage.getItem(PAYMENT_RETURN_MARKER_KEY) === "1";
+
+    setIsPaymentReturnFlow(hasStorageFlag);
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) return;
-    if (!token) {
+
+    if (token) {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(PAYMENT_RETURN_MARKER_KEY);
+      }
+      setAuthGraceExpired(false);
+
+      return;
+    }
+
+    if (!isPaymentReturnFlow) {
+      setAuthGraceExpired(false);
+
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAuthGraceExpired(true);
+      window.sessionStorage.removeItem(PAYMENT_RETURN_MARKER_KEY);
+    }, PAYMENT_RETURN_GRACE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [hydrated, isPaymentReturnFlow, token]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!token && (!isPaymentReturnFlow || authGraceExpired)) {
       router.replace("/login");
     }
-  }, [hydrated, router, token]);
+  }, [authGraceExpired, hydrated, isPaymentReturnFlow, router, token]);
 
   const fetchOrders = useCallback(async (page: number = 1) => {
     setOrdersLoading(true);
@@ -209,7 +247,36 @@ export default function MyOrdersPage() {
     void Promise.all([fetchOrders(1), fetchLogs(1)]);
   }, [fetchLogs, fetchOrders, hydrated, token]);
 
-  if (!hydrated || !token) {
+  if (!hydrated) {
+    return null;
+  }
+
+  if (!token && isPaymentReturnFlow && !authGraceExpired) {
+    return (
+      <DefaultLayout fullWidth hideNavbar>
+        <div className="min-h-dvh bg-[radial-gradient(circle_at_top,rgba(30,64,175,0.16),transparent_26%),radial-gradient(circle_at_85%_10%,rgba(245,158,11,0.14),transparent_18%),linear-gradient(180deg,#08101d_0%,#040816_52%,#02050d_100%)] text-white">
+          <TopNavbar />
+          <section className="px-4 pb-16 pt-28 sm:px-6 lg:px-8 lg:pt-32">
+            <div className="mx-auto max-w-3xl">
+              <Card className="border border-white/10 bg-white/[0.04]">
+                <CardBody className="items-center gap-4 px-6 py-14 text-center">
+                  <Spinner color="primary" size="lg" />
+                  <h1 className="text-3xl font-semibold tracking-tight">
+                    正在恢复订单状态
+                  </h1>
+                  <p className="max-w-xl text-sm leading-7 text-white/60">
+                    检测到支付回跳，正在等待登录状态恢复并同步订单信息，请稍候。
+                  </p>
+                </CardBody>
+              </Card>
+            </div>
+          </section>
+        </div>
+      </DefaultLayout>
+    );
+  }
+
+  if (!token) {
     return (
       <DefaultLayout fullWidth hideNavbar>
         <div className="min-h-dvh bg-[radial-gradient(circle_at_top,rgba(30,64,175,0.16),transparent_26%),radial-gradient(circle_at_85%_10%,rgba(245,158,11,0.14),transparent_18%),linear-gradient(180deg,#08101d_0%,#040816_52%,#02050d_100%)] text-white">

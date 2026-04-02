@@ -155,6 +155,7 @@ const MAX_POLL_TIMES = 100;
 const POLL_INTERVAL_MS = 3000;
 const QR_CODE_SIZE = 480;
 const PENDING_PAYMENT_STORAGE_KEY = "checkout-pending-payment";
+const PAYMENT_RETURN_MARKER_KEY = "checkout-payment-return";
 
 const formatCurrency = (value: number) =>
   `\u00a5${new Intl.NumberFormat("zh-CN", {
@@ -218,6 +219,14 @@ const savePendingPayment = (payment: PendingPayment) => {
     PENDING_PAYMENT_STORAGE_KEY,
     JSON.stringify(payment),
   );
+};
+
+const markPaymentReturn = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(PAYMENT_RETURN_MARKER_KEY, "1");
 };
 
 const clearPendingPayment = () => {
@@ -539,6 +548,7 @@ export default function CheckoutPage() {
         savePendingPayment(payment);
 
         if (payType !== 2 || /^https?:\/\//i.test(payUrl)) {
+          markPaymentReturn();
           stopPolling();
           window.location.href = payUrl;
 
