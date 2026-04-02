@@ -40,16 +40,16 @@ jobs:
           command_timeout: 30m
           request_pty: true
           script: |
-            set -eu
+            set -e
 
             load_profile() {
               profile="$1"
               if [ -f "$profile" ]; then
                 echo "[deploy] loading $profile"
-                set +e
+                set +eu
                 . "$profile"
                 status=$?
-                set -e
+                set -eu
                 if [ "$status" -ne 0 ]; then
                   echo "[deploy] warning: $profile exited with status $status"
                 fi
@@ -89,7 +89,7 @@ jobs:
             echo "[deploy] building app"
             pnpm build
 
-            echo "[deploy] reloading pm2 app"
+            echo "[deploy] restarting pm2 app"
             pm2 restart next-pages-template || pm2 start ecosystem.config.cjs --only next-pages-template
             pm2 save
 
