@@ -53,3 +53,12 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 ## License
 
 Licensed under the [MIT license](https://github.com/heroui-inc/next-pages-template/blob/main/LICENSE).
+
+
+
+
+
+
+
+## GitHub Actions 自动部署
+这个项目已经接入了 GitHub Actions 自动部署。
