@@ -40,7 +40,21 @@ jobs:
           command_timeout: 30m
           script: |
             set -e
-            export PATH="$HOME/.local/share/pnpm:$PATH"
+            [ -f /etc/profile ] && . /etc/profile
+            [ -f "$HOME/.bash_profile" ] && . "$HOME/.bash_profile"
+            [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+            [ -f "$HOME/.profile" ] && . "$HOME/.profile"
+
+            export PATH="$HOME/.local/share/pnpm:/usr/local/bin:/usr/bin:$PATH"
+
+            if ! command -v pnpm >/dev/null 2>&1; then
+              echo "pnpm not found in PATH after loading profiles"
+              exit 1
+            fi
+
+            command -v pnpm
+            pnpm -v
+
             cd "${{ secrets.DEPLOY_PATH }}"
             BRANCH="${{ github.ref_name }}"
             git fetch origin "$BRANCH"
