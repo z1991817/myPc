@@ -38,29 +38,59 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           command_timeout: 30m
+          request_pty: true
           script: |
-            set -e
-            [ -f /etc/profile ] && . /etc/profile
-            [ -f "$HOME/.bash_profile" ] && . "$HOME/.bash_profile"
-            [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
-            [ -f "$HOME/.profile" ] && . "$HOME/.profile"
+            set -eu
+
+            load_profile() {
+              profile="$1"
+              if [ -f "$profile" ]; then
+                echo "[deploy] loading $profile"
+                set +e
+                . "$profile"
+                status=$?
+                set -e
+                if [ "$status" -ne 0 ]; then
+                  echo "[deploy] warning: $profile exited with status $status"
+                fi
+              fi
+            }
+
+            echo "[deploy] preparing shell environment"
+            load_profile /etc/profile
+            load_profile "$HOME/.bash_profile"
+            load_profile "$HOME/.bashrc"
+            load_profile "$HOME/.profile"
 
             export PATH="$HOME/.local/share/pnpm:/usr/local/bin:/usr/bin:$PATH"
 
-            if ! command -v pnpm >/dev/null 2>&1; then
-              echo "pnpm not found in PATH after loading profiles"
-              exit 1
-            fi
-
-            command -v pnpm
+            echo "[deploy] checking runtime"
+            command -v node || { echo "[deploy] node not found"; exit 1; }
+            command -v pnpm || { echo "[deploy] pnpm not found"; exit 1; }
+            command -v pm2 || { echo "[deploy] pm2 not found"; exit 1; }
+            node -v
             pnpm -v
+            pm2 -v
 
+            echo "[deploy] entering project"
             cd "${{ secrets.DEPLOY_PATH }}"
+            pwd
+
             BRANCH="${{ github.ref_name }}"
+
+            echo "[deploy] syncing git branch $BRANCH"
             git fetch origin "$BRANCH"
             git switch "$BRANCH" || git switch -c "$BRANCH" --track "origin/$BRANCH"
             git pull origin "$BRANCH"
+
+            echo "[deploy] installing dependencies"
             pnpm install --frozen-lockfile
+
+            echo "[deploy] building app"
             pnpm build
-            pm2 reload next-pages-template || pm2 start ecosystem.config.cjs --only next-pages-template
+
+            echo "[deploy] reloading pm2 app"
+            pm2 restart next-pages-template || pm2 start ecosystem.config.cjs --only next-pages-template
             pm2 save
+
+            echo "[deploy] deployment completed"
