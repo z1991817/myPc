@@ -278,7 +278,7 @@ const pricingPlans: PricingPlan[] = [
     ],
     isPopular: false,
     ctaText: "立即尝鲜",
-    ctaHref: "/createNew",
+    ctaHref: "/checkout",
   },
   {
     id: 2,
@@ -295,7 +295,7 @@ const pricingPlans: PricingPlan[] = [
     ],
     isPopular: true,
     ctaText: "获取最高性价比",
-    ctaHref: "/pricing",
+    ctaHref: "/checkout",
   },
   {
     id: 3,
@@ -312,7 +312,7 @@ const pricingPlans: PricingPlan[] = [
     ],
     isPopular: false,
     ctaText: "抢占创世席位",
-    ctaHref: "/pricing",
+    ctaHref: "/checkout",
   },
 ];
 
@@ -516,10 +516,10 @@ export default function IndexNewPage() {
   }, []);
 
   return (
-    <DefaultLayout fullWidth>
+    <DefaultLayout fullWidth hideNavbar>
       <div className="min-h-screen overflow-x-hidden bg-[#030712]">
-        {/* 顶部导航 */}
         <TopNavbar />
+        {/* 顶部导航 */}
 
         {/* ============================================
             第一屏 - Hero 网站介绍

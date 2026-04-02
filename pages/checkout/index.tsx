@@ -54,46 +54,86 @@ type ActivePayment = {
   points: number | null;
 };
 
+type PayType = 1 | 2 | 3;
+
+type PendingPayment = ActivePayment & {
+  payType: PayType;
+};
+
+const COPY = {
+  packageLoadFailed: "\u5957\u9910\u52a0\u8f7d\u5931\u8d25",
+  payTimeout:
+    "\u652f\u4ed8\u8d85\u65f6\uff0c\u5982\u5df2\u652f\u4ed8\u8bf7\u7a0d\u540e\u5237\u65b0\u786e\u8ba4\u79ef\u5206\u5230\u8d26",
+  paySuccess: "\u652f\u4ed8\u6210\u529f\uff0c\u79ef\u5206\u5df2\u5230\u8d26",
+  payFailed:
+    "\u652f\u4ed8\u5931\u8d25\uff0c\u8bf7\u91cd\u65b0\u53d1\u8d77\u652f\u4ed8",
+  orderStatusFailed:
+    "\u8ba2\u5355\u72b6\u6001\u67e5\u8be2\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u5728\u8ba2\u5355\u9875\u786e\u8ba4\u652f\u4ed8\u7ed3\u679c",
+  loginFirst: "\u8bf7\u5148\u767b\u5f55\u540e\u518d\u8d2d\u4e70",
+  packageLoading:
+    "\u5957\u9910\u52a0\u8f7d\u4e2d\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5",
+  packageUnavailable:
+    "\u5f53\u524d\u5957\u9910\u6682\u4e0d\u53ef\u8d2d\u4e70",
+  createOrderFailed: "\u521b\u5efa\u8ba2\u5355\u5931\u8d25",
+  pageBadge: "\u6536\u94f6\u53f0",
+  safePay: "\u5b89\u5168\u652f\u4ed8",
+  pageTitle: "\u9009\u62e9\u5957\u9910\uff0c\u7acb\u5373\u8d2d\u4e70",
+  pageDescription:
+    "\u9875\u9762\u4f1a\u6839\u636e\u5f53\u524d\u8bbe\u5907\u73af\u5883\u81ea\u52a8\u9009\u62e9\u652f\u4ed8\u65b9\u5f0f\uff1aPC \u7aef\u4f7f\u7528\u5fae\u4fe1\u626b\u7801\u652f\u4ed8\uff0c\u5fae\u4fe1\u5185\u7f6e\u6d4f\u89c8\u5668\u4f7f\u7528\u5fae\u4fe1\u5185\u652f\u4ed8\uff0c\u624b\u673a\u666e\u901a\u6d4f\u89c8\u5668\u4f7f\u7528\u5fae\u4fe1 H5 \u652f\u4ed8\u3002",
+  recommended: "\u63a8\u8350",
+  gainPoints: "\u83b7\u5f97\u79ef\u5206",
+  autoArrive: "\u652f\u4ed8\u540e\u81ea\u52a8\u5230\u8d26",
+  buyNow: "\u7acb\u5373\u8d2d\u4e70",
+  qrSubtitle: "\u4f7f\u7528\u5fae\u4fe1\u626b\u7801\u5b8c\u6210\u652f\u4ed8",
+  qrAlt: "\u652f\u4ed8\u4e8c\u7ef4\u7801",
+  gain: "\u83b7\u5f97",
+  qrTip:
+    "\u652f\u4ed8\u6210\u529f\u540e\uff0c\u5bf9\u5e94\u5957\u9910\u6743\u76ca\u4f1a\u81ea\u52a8\u5230\u8d26\u3002\u8bf7\u5728 5 \u5206\u949f\u5185\u5b8c\u6210\u652f\u4ed8\u3002",
+} as const;
+
 const PLAN_TEMPLATES: PlanTemplate[] = [
   {
     id: 1,
-    name: "尝鲜体验包",
-    price: "¥9.9",
-    description: "适合第一次购买，快速体验生成效果。",
-    credits: "1,000 积分",
+    name: "\u5c1d\u9c9c\u4f53\u9a8c\u5305",
+    price: "\u00a59.9",
+    description:
+      "\u9002\u5408\u7b2c\u4e00\u6b21\u8d2d\u4e70\uff0c\u5feb\u901f\u4f53\u9a8c\u751f\u6210\u6548\u679c\u3002",
+    credits: "1,000 \u79ef\u5206",
     features: [
-      "约可生成 20 张 Banana2 高级图像",
-      "或 50 张基础图像",
-      "支持无水印下载",
+      "\u7ea6\u53ef\u751f\u6210 20 \u5f20 Banana2 \u9ad8\u7ea7\u56fe\u50cf",
+      "\u6216 50 \u5f20\u57fa\u7840\u56fe\u50cf",
+      "\u652f\u6301\u65e0\u6c34\u5370\u4e0b\u8f7d",
     ],
     isPopular: false,
   },
   {
     id: 2,
-    name: "专业创作包",
-    price: "¥39.9",
-    description: "适合高频创作，积分更充足，性价比更高。",
-    credits: "4,500 + 500 积分",
+    name: "\u4e13\u4e1a\u521b\u4f5c\u5305",
+    price: "\u00a539.9",
+    description:
+      "\u9002\u5408\u9ad8\u9891\u521b\u4f5c\uff0c\u79ef\u5206\u66f4\u5145\u8db3\uff0c\u6027\u4ef7\u6bd4\u66f4\u9ad8\u3002",
+    credits: "4,500 + 500 \u79ef\u5206",
     features: [
-      "约可生成 90 张 Banana2 高级图像",
-      "优先排队出图特权",
-      "支持无水印下载",
-      "商业使用许可",
+      "\u7ea6\u53ef\u751f\u6210 90 \u5f20 Banana2 \u9ad8\u7ea7\u56fe\u50cf",
+      "\u4f18\u5148\u6392\u961f\u51fa\u56fe\u7279\u6743",
+      "\u652f\u6301\u65e0\u6c34\u5370\u4e0b\u8f7d",
+      "\u5546\u4e1a\u4f7f\u7528\u8bb8\u53ef",
     ],
     isPopular: true,
   },
   {
     id: 3,
-    name: "创世合伙人卡",
-    price: "¥99",
-    description: "适合长期使用者，一次购买获得更大额度。",
-    credits: "15,000 积分",
+    name: "\u521b\u4e16\u5408\u4f19\u4eba\u5361",
+    price: "\u00a599",
+    description:
+      "\u9002\u5408\u957f\u671f\u4f7f\u7528\u8005\uff0c\u4e00\u6b21\u8d2d\u4e70\u83b7\u5f97\u66f4\u5927\u989d\u5ea6\u3002",
+    credits: "15,000 \u79ef\u5206",
     features: [
-      "一次性获得 15,000 积分",
-      "终身特权：每月自动发放 500 积分",
-      "官网展示“创世赞助者”专属徽章",
-      "所有专业版功能",
-      "优先技术支持",
+      "\u4e00\u6b21\u6027\u83b7\u5f97 15,000 \u79ef\u5206",
+      "\u7ec8\u8eab\u7279\u6743\uff1a\u6bcf\u6708\u81ea\u52a8\u53d1\u653e 500 \u79ef\u5206",
+      "\u5b98\u7f51\u5c55\u793a\u201c\u521b\u4e16\u8d5e\u52a9\u8005\u201d\u4e13\u5c5e\u5fbd\u7ae0",
+      "\u6240\u6709\u4e13\u4e1a\u7248\u529f\u80fd",
+      "\u4f18\u5148\u6280\u672f\u652f\u6301",
     ],
     isPopular: false,
   },
@@ -114,15 +154,79 @@ const planIcons: Record<number, LucideIcon> = {
 const MAX_POLL_TIMES = 100;
 const POLL_INTERVAL_MS = 3000;
 const QR_CODE_SIZE = 480;
+const PENDING_PAYMENT_STORAGE_KEY = "checkout-pending-payment";
 
 const formatCurrency = (value: number) =>
-  `¥${new Intl.NumberFormat("zh-CN", {
+  `\u00a5${new Intl.NumberFormat("zh-CN", {
     maximumFractionDigits: 2,
     minimumFractionDigits: value % 1 === 0 ? 0 : 2,
   }).format(value)}`;
 
 const formatPoints = (value: number) =>
-  `${new Intl.NumberFormat("zh-CN").format(value)} 积分`;
+  `${new Intl.NumberFormat("zh-CN").format(value)} \u79ef\u5206`;
+
+const isWechatBrowser = (userAgent: string) =>
+  /MicroMessenger/i.test(userAgent);
+
+const isMobileBrowser = (userAgent: string) =>
+  /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(userAgent);
+
+const resolvePayType = (): PayType => {
+  if (typeof window === "undefined") {
+    return 2;
+  }
+
+  const userAgent = window.navigator.userAgent;
+
+  if (isWechatBrowser(userAgent)) {
+    return 1;
+  }
+
+  if (isMobileBrowser(userAgent)) {
+    return 3;
+  }
+
+  return 2;
+};
+
+const readPendingPayment = (): PendingPayment | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.sessionStorage.getItem(PENDING_PAYMENT_STORAGE_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as PendingPayment;
+  } catch {
+    window.sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+
+    return null;
+  }
+};
+
+const savePendingPayment = (payment: PendingPayment) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(
+    PENDING_PAYMENT_STORAGE_KEY,
+    JSON.stringify(payment),
+  );
+};
+
+const clearPendingPayment = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(PENDING_PAYMENT_STORAGE_KEY);
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -165,6 +269,7 @@ export default function CheckoutPage() {
     setIsQrOpen(false);
     setQrCodeDataUrl(null);
     setActivePayment(null);
+    clearPendingPayment();
   }, [stopPolling]);
 
   useEffect(() => {
@@ -191,7 +296,7 @@ export default function CheckoutPage() {
         setPackages(response.data);
       } catch (error: any) {
         addToast({
-          title: error?.response?.data?.message || "套餐加载失败",
+          title: error?.response?.data?.message || COPY.packageLoadFailed,
           color: "danger",
         });
       } finally {
@@ -215,7 +320,7 @@ export default function CheckoutPage() {
             matchedPackage?.points !== undefined
               ? formatPoints(matchedPackage.points)
               : template.credits,
-          name: matchedPackage?.name ?? template.name,
+          name: template.name,
           packageId,
           points: matchedPackage?.points ?? null,
           price:
@@ -257,7 +362,7 @@ export default function CheckoutPage() {
       if (pollCountRef.current > MAX_POLL_TIMES) {
         stopPolling();
         addToast({
-          title: "支付超时，如已支付请稍后刷新确认积分到账",
+          title: COPY.payTimeout,
           color: "warning",
         });
 
@@ -272,14 +377,15 @@ export default function CheckoutPage() {
           stopPolling();
           await refreshUserPoints();
           clearPaymentFlow();
-          addToast({ title: "支付成功，积分已到账", color: "success" });
+          addToast({ title: COPY.paySuccess, color: "success" });
 
           return;
         }
 
         if (status === "failed") {
           stopPolling();
-          addToast({ title: "支付失败，请重新发起支付", color: "danger" });
+          clearPendingPayment();
+          addToast({ title: COPY.payFailed, color: "danger" });
 
           return;
         }
@@ -287,7 +393,7 @@ export default function CheckoutPage() {
         if (pollCountRef.current >= MAX_POLL_TIMES) {
           stopPolling();
           addToast({
-            title: "订单状态查询失败，请稍后在订单页确认支付结果",
+            title: COPY.orderStatusFailed,
             color: "warning",
           });
 
@@ -303,13 +409,14 @@ export default function CheckoutPage() {
   );
 
   const openPaymentModal = useCallback(
-    async (payment: ActivePayment) => {
+    async (payment: PendingPayment) => {
       const qrCode = await QRCode.toDataURL(payment.payUrl, {
         errorCorrectionLevel: "M",
         margin: 1,
         width: QR_CODE_SIZE,
       });
 
+      savePendingPayment(payment);
       setActivePayment(payment);
       setQrCodeDataUrl(qrCode);
       setIsQrOpen(true);
@@ -320,6 +427,62 @@ export default function CheckoutPage() {
     [pollOrderStatus, stopPolling],
   );
 
+  useEffect(() => {
+    if (!hydrated || !token) {
+      return;
+    }
+
+    const pendingPayment = readPendingPayment();
+
+    if (!pendingPayment) {
+      return;
+    }
+
+    const restorePayment = async () => {
+      try {
+        const response = await getRechargeOrderDetail(pendingPayment.orderId);
+        const status = response.data.order.status;
+
+        if (status === "paid") {
+          await refreshUserPoints();
+          clearPaymentFlow();
+          addToast({ title: COPY.paySuccess, color: "success" });
+
+          return;
+        }
+
+        if (status === "failed") {
+          clearPaymentFlow();
+          addToast({ title: COPY.payFailed, color: "danger" });
+
+          return;
+        }
+
+        if (pendingPayment.payType === 2) {
+          await openPaymentModal(pendingPayment);
+
+          return;
+        }
+
+        stopPolling();
+        pollCountRef.current = 0;
+        void pollOrderStatus(pendingPayment.orderId);
+      } catch {
+        clearPendingPayment();
+      }
+    };
+
+    void restorePayment();
+  }, [
+    clearPaymentFlow,
+    hydrated,
+    openPaymentModal,
+    pollOrderStatus,
+    refreshUserPoints,
+    stopPolling,
+    token,
+  ]);
+
   const handlePurchase = useCallback(
     async (planId: number) => {
       setSelectedPlanId(planId);
@@ -329,7 +492,7 @@ export default function CheckoutPage() {
       }
 
       if (!token) {
-        addToast({ title: "请先登录后再购买", color: "warning" });
+        addToast({ title: COPY.loginFirst, color: "warning" });
         void router.push("/login");
 
         return;
@@ -339,9 +502,7 @@ export default function CheckoutPage() {
 
       if (!targetPlan?.packageId) {
         addToast({
-          title: packagesLoading
-            ? "套餐加载中，请稍后重试"
-            : "当前套餐暂不可购买",
+          title: packagesLoading ? COPY.packageLoading : COPY.packageUnavailable,
           color: "warning",
         });
 
@@ -351,7 +512,8 @@ export default function CheckoutPage() {
       setCreatingPlanId(planId);
 
       try {
-        const response = await createRechargeOrder(targetPlan.packageId, 2);
+        const payType = resolvePayType();
+        const response = await createRechargeOrder(targetPlan.packageId, payType);
         const orderId = response.data.order?.id ?? response.data.orderId;
         const payUrl = response.data.payment?.payUrl ?? response.data.payUrl;
 
@@ -359,16 +521,14 @@ export default function CheckoutPage() {
           throw new Error("Missing pay order response");
         }
 
-        const payment: ActivePayment = {
+        const payment: PendingPayment = {
           amount:
             response.data.order?.amount ??
             response.data.amount ??
             targetPlan.amount,
           orderId,
-          packageName:
-            response.data.order?.package_name ??
-            response.data.packageName ??
-            targetPlan.name,
+          packageName: targetPlan.name,
+          payType,
           payUrl,
           points:
             response.data.order?.points ??
@@ -376,7 +536,9 @@ export default function CheckoutPage() {
             targetPlan.points,
         };
 
-        if (/^https?:\/\//i.test(payUrl)) {
+        savePendingPayment(payment);
+
+        if (payType !== 2 || /^https?:\/\//i.test(payUrl)) {
           stopPolling();
           window.location.href = payUrl;
 
@@ -386,7 +548,7 @@ export default function CheckoutPage() {
         await openPaymentModal(payment);
       } catch (error: any) {
         addToast({
-          title: error?.response?.data?.message || "创建订单失败",
+          title: error?.response?.data?.message || COPY.createOrderFailed,
           color: "danger",
         });
       } finally {
@@ -432,7 +594,7 @@ export default function CheckoutPage() {
                   startContent={<WalletCards className="ml-2 h-3.5 w-3.5" />}
                   variant="flat"
                 >
-                  收银台
+                  {COPY.pageBadge}
                 </Chip>
                 <Chip
                   className="border border-white/10 bg-white/[0.06] text-white/75"
@@ -440,15 +602,15 @@ export default function CheckoutPage() {
                   startContent={<ShieldCheck className="ml-2 h-3.5 w-3.5" />}
                   variant="flat"
                 >
-                  安全支付
+                  {COPY.safePay}
                 </Chip>
               </div>
 
               <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                选择套餐，立即购买
+                {COPY.pageTitle}
               </h1>
               <p className="mt-4 text-base leading-8 text-white/60 sm:text-lg">
-                页面仅保留三个套餐和购买入口。点击按钮后，直接弹出对应套餐的支付二维码。
+                {COPY.pageDescription}
               </p>
             </div>
 
@@ -477,7 +639,7 @@ export default function CheckoutPage() {
                             size="sm"
                             variant="solid"
                           >
-                            推荐
+                            {COPY.recommended}
                           </Chip>
                         ) : null}
                       </div>
@@ -535,7 +697,7 @@ export default function CheckoutPage() {
                                   : "border-blue-300/15 bg-blue-400/10 text-blue-100/80"
                               }`}
                             >
-                              获得积分
+                              {COPY.gainPoints}
                             </span>
                             <span
                               className={`text-xs ${
@@ -544,7 +706,7 @@ export default function CheckoutPage() {
                                   : "text-blue-200/70"
                               }`}
                             >
-                              支付后自动到账
+                              {COPY.autoArrive}
                             </span>
                           </div>
                           <p
@@ -595,7 +757,7 @@ export default function CheckoutPage() {
                           void handlePurchase(plan.id);
                         }}
                       >
-                        立即购买
+                        {COPY.buyNow}
                       </Button>
                     </CardBody>
                   </Card>
@@ -617,7 +779,7 @@ export default function CheckoutPage() {
             <ModalHeader className="flex flex-col gap-1 px-6 pt-6">
               <span className="text-2xl font-semibold">{modalPackageName}</span>
               <span className="text-sm font-normal text-white/55">
-                使用微信或支付宝扫码支付
+                {COPY.qrSubtitle}
               </span>
             </ModalHeader>
             <ModalBody className="px-6 pb-6 pt-2">
@@ -626,7 +788,7 @@ export default function CheckoutPage() {
                   <div className="flex h-[78%] w-[78%] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-4">
                     {qrCodeDataUrl ? (
                       <img
-                        alt="支付二维码"
+                        alt={COPY.qrAlt}
                         className="h-full w-full rounded-[1rem] object-contain"
                         src={qrCodeDataUrl}
                       />
@@ -646,10 +808,11 @@ export default function CheckoutPage() {
                   {modalAmount !== null ? formatCurrency(modalAmount) : "--"}
                 </p>
                 <p className="mt-2 text-base font-semibold text-blue-200/85">
-                  获得 {modalPoints !== null ? formatPoints(modalPoints) : "--"}
+                  {COPY.gain}{" "}
+                  {modalPoints !== null ? formatPoints(modalPoints) : "--"}
                 </p>
                 <p className="mt-3 text-sm leading-7 text-white/60">
-                  支付成功后，对应套餐权益会自动到账。请在 5 分钟内完成支付。
+                  {COPY.qrTip}
                 </p>
               </div>
             </ModalBody>

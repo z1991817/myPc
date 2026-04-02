@@ -19,6 +19,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isPointsValue = (value: unknown): value is string | number =>
   typeof value === "string" || typeof value === "number";
 
+const hasCurrentPoints = (payload: unknown): boolean => {
+  if (!isRecord(payload)) {
+    return false;
+  }
+
+  if (isPointsValue(payload.currentPoints)) {
+    return true;
+  }
+
+  for (const key of ["data", "user", "profile", "result", "payload"] as const) {
+    if (hasCurrentPoints(payload[key])) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const extractPointsPatch = (payload: unknown): Partial<UserProfile> | null => {
   if (!isRecord(payload)) {
     return null;
@@ -76,9 +94,15 @@ request.interceptors.request.use(
 
 request.interceptors.response.use(
   (response) => {
+    const url = response.config.url ?? "";
+    const isRechargeRequest = url.includes("/app/recharge");
     const pointsPatch = extractPointsPatch(response.data);
 
-    if (pointsPatch && useUserStore.getState().user) {
+    if (
+      pointsPatch &&
+      useUserStore.getState().user &&
+      (!isRechargeRequest || hasCurrentPoints(response.data))
+    ) {
       useUserStore.getState().patchUser(pointsPatch);
     }
 
