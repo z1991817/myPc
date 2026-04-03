@@ -587,7 +587,7 @@ export default function IndexNewPage() {
                 >
                   浏览画廊
                 </Button>
-                <Button
+                {/* <Button
                   className="border-white/20 px-8 text-base text-white/80 hover:bg-white/5"
                   radius="full"
                   size="lg"
@@ -604,7 +604,7 @@ export default function IndexNewPage() {
                   }}
                 >
                   测试接口
-                </Button>
+                </Button> */}
               </div>
             </Reveal>
 
