@@ -34,7 +34,11 @@ function App({ Component, pageProps }: AppProps) {
             />
           </Head>
           <Component {...pageProps} />
-          <ToastProvider />
+          <ToastProvider
+            placement="top-center"
+            regionProps={{ className: "z-[70]" }}
+            toastOffset={80}
+          />
           {/* 全局积分不足模态框 */}
           <InsufficientPointsModal
             isOpen={isOpen}

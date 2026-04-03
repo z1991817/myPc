@@ -61,79 +61,70 @@ type PendingPayment = ActivePayment & {
 };
 
 const COPY = {
-  packageLoadFailed: "\u5957\u9910\u52a0\u8f7d\u5931\u8d25",
-  payTimeout:
-    "\u652f\u4ed8\u8d85\u65f6\uff0c\u5982\u5df2\u652f\u4ed8\u8bf7\u7a0d\u540e\u5237\u65b0\u786e\u8ba4\u79ef\u5206\u5230\u8d26",
-  paySuccess: "\u652f\u4ed8\u6210\u529f\uff0c\u79ef\u5206\u5df2\u5230\u8d26",
-  payFailed:
-    "\u652f\u4ed8\u5931\u8d25\uff0c\u8bf7\u91cd\u65b0\u53d1\u8d77\u652f\u4ed8",
-  orderStatusFailed:
-    "\u8ba2\u5355\u72b6\u6001\u67e5\u8be2\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u5728\u8ba2\u5355\u9875\u786e\u8ba4\u652f\u4ed8\u7ed3\u679c",
-  loginFirst: "\u8bf7\u5148\u767b\u5f55\u540e\u518d\u8d2d\u4e70",
-  packageLoading:
-    "\u5957\u9910\u52a0\u8f7d\u4e2d\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5",
-  packageUnavailable:
-    "\u5f53\u524d\u5957\u9910\u6682\u4e0d\u53ef\u8d2d\u4e70",
-  createOrderFailed: "\u521b\u5efa\u8ba2\u5355\u5931\u8d25",
-  pageBadge: "\u6536\u94f6\u53f0",
-  safePay: "\u5b89\u5168\u652f\u4ed8",
-  pageTitle: "\u9009\u62e9\u5957\u9910\uff0c\u7acb\u5373\u8d2d\u4e70",
+  packageLoadFailed: "套餐加载失败",
+  payTimeout: "支付超时，如已支付请稍后刷新确认积分到账",
+  paySuccess: "支付成功，积分已到账",
+  payFailed: "支付失败，请重新发起支付",
+  orderStatusFailed: "订单状态查询失败，请稍后在订单页确认支付结果",
+  loginFirst: "请先登录后再购买",
+  packageLoading: "套餐加载中，请稍后重试",
+  packageUnavailable: "当前套餐暂不可购买",
+  createOrderFailed: "创建订单失败",
+  pageBadge: "收银台",
+  safePay: "安全支付",
+  pageTitle: "选择套餐，立即购买",
   pageDescription:
-    "\u9875\u9762\u4f1a\u6839\u636e\u5f53\u524d\u8bbe\u5907\u73af\u5883\u81ea\u52a8\u9009\u62e9\u652f\u4ed8\u65b9\u5f0f\uff1aPC \u7aef\u4f7f\u7528\u5fae\u4fe1\u626b\u7801\u652f\u4ed8\uff0c\u5fae\u4fe1\u5185\u7f6e\u6d4f\u89c8\u5668\u4f7f\u7528\u5fae\u4fe1\u5185\u652f\u4ed8\uff0c\u624b\u673a\u666e\u901a\u6d4f\u89c8\u5668\u4f7f\u7528\u5fae\u4fe1 H5 \u652f\u4ed8\u3002",
-  recommended: "\u63a8\u8350",
-  gainPoints: "\u83b7\u5f97\u79ef\u5206",
-  autoArrive: "\u652f\u4ed8\u540e\u81ea\u52a8\u5230\u8d26",
-  buyNow: "\u7acb\u5373\u8d2d\u4e70",
-  qrSubtitle: "\u4f7f\u7528\u5fae\u4fe1\u626b\u7801\u5b8c\u6210\u652f\u4ed8",
-  qrAlt: "\u652f\u4ed8\u4e8c\u7ef4\u7801",
-  gain: "\u83b7\u5f97",
-  qrTip:
-    "\u652f\u4ed8\u6210\u529f\u540e\uff0c\u5bf9\u5e94\u5957\u9910\u6743\u76ca\u4f1a\u81ea\u52a8\u5230\u8d26\u3002\u8bf7\u5728 5 \u5206\u949f\u5185\u5b8c\u6210\u652f\u4ed8\u3002",
+    "购买积分，解锁更多创作可能。选择适合你的套餐，轻松获得积分，畅享创作乐趣！",
+  recommended: "推荐",
+  gainPoints: "获得积分",
+  autoArrive: "支付后自动到账",
+  buyNow: "立即购买",
+  qrSubtitle: "使用微信扫码完成支付",
+  qrAlt: "支付二维码",
+  gain: "获得",
+  qrTip: "支付成功后，对应套餐权益会自动到账。请在 5 分钟内完成支付。",
 } as const;
 
 const PLAN_TEMPLATES: PlanTemplate[] = [
   {
     id: 1,
-    name: "\u5c1d\u9c9c\u4f53\u9a8c\u5305",
-    price: "\u00a59.9",
-    description:
-      "\u9002\u5408\u7b2c\u4e00\u6b21\u8d2d\u4e70\uff0c\u5feb\u901f\u4f53\u9a8c\u751f\u6210\u6548\u679c\u3002",
-    credits: "1,000 \u79ef\u5206",
+    name: "尝鲜体验包",
+    price: "¥9.9",
+    description: "适合第一次购买，快速体验生成效果。",
+    credits: "1,000 积分",
     features: [
-      "\u7ea6\u53ef\u751f\u6210 20 \u5f20 Banana2 \u9ad8\u7ea7\u56fe\u50cf",
-      "\u6216 50 \u5f20\u57fa\u7840\u56fe\u50cf",
-      "\u652f\u6301\u65e0\u6c34\u5370\u4e0b\u8f7d",
+      "约可生成 20 张 Banana2 高级图像",
+      "或 50 张基础图像",
+      "支持无水印下载",
     ],
     isPopular: false,
   },
   {
     id: 2,
-    name: "\u4e13\u4e1a\u521b\u4f5c\u5305",
-    price: "\u00a539.9",
-    description:
-      "\u9002\u5408\u9ad8\u9891\u521b\u4f5c\uff0c\u79ef\u5206\u66f4\u5145\u8db3\uff0c\u6027\u4ef7\u6bd4\u66f4\u9ad8\u3002",
-    credits: "4,500 + 500 \u79ef\u5206",
+    name: "专业创作包",
+    price: "¥39.9",
+    description: "适合高频创作，积分更充足，性价比更高。",
+    credits: "4,500 + 500 积分",
     features: [
-      "\u7ea6\u53ef\u751f\u6210 90 \u5f20 Banana2 \u9ad8\u7ea7\u56fe\u50cf",
-      "\u4f18\u5148\u6392\u961f\u51fa\u56fe\u7279\u6743",
-      "\u652f\u6301\u65e0\u6c34\u5370\u4e0b\u8f7d",
-      "\u5546\u4e1a\u4f7f\u7528\u8bb8\u53ef",
+      "约可生成 90 张 Banana2 高级图像",
+      "优先排队出图特权",
+      "支持无水印下载",
+      "商业使用许可",
     ],
     isPopular: true,
   },
   {
     id: 3,
-    name: "\u521b\u4e16\u5408\u4f19\u4eba\u5361",
-    price: "\u00a599",
-    description:
-      "\u9002\u5408\u957f\u671f\u4f7f\u7528\u8005\uff0c\u4e00\u6b21\u8d2d\u4e70\u83b7\u5f97\u66f4\u5927\u989d\u5ea6\u3002",
-    credits: "15,000 \u79ef\u5206",
+    name: "创世合伙人卡",
+    price: "¥99",
+    description: "适合长期使用者，一次购买获得更大额度。",
+    credits: "15,000 积分",
     features: [
-      "\u4e00\u6b21\u6027\u83b7\u5f97 15,000 \u79ef\u5206",
-      "\u7ec8\u8eab\u7279\u6743\uff1a\u6bcf\u6708\u81ea\u52a8\u53d1\u653e 500 \u79ef\u5206",
-      "\u5b98\u7f51\u5c55\u793a\u201c\u521b\u4e16\u8d5e\u52a9\u8005\u201d\u4e13\u5c5e\u5fbd\u7ae0",
-      "\u6240\u6709\u4e13\u4e1a\u7248\u529f\u80fd",
-      "\u4f18\u5148\u6280\u672f\u652f\u6301",
+      "一次性获得 15,000 积分",
+      "终身特权：每月自动发放 500 积分",
+      "官网展示“创世赞助者”专属徽章",
+      "所有专业版功能",
+      "优先技术支持",
     ],
     isPopular: false,
   },
@@ -157,14 +148,30 @@ const QR_CODE_SIZE = 480;
 const PENDING_PAYMENT_STORAGE_KEY = "checkout-pending-payment";
 const PAYMENT_RETURN_MARKER_KEY = "checkout-payment-return";
 
+const hasPaymentReturnMarker = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.sessionStorage.getItem(PAYMENT_RETURN_MARKER_KEY) === "1";
+};
+
+const clearPaymentReturnMarker = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(PAYMENT_RETURN_MARKER_KEY);
+};
+
 const formatCurrency = (value: number) =>
-  `\u00a5${new Intl.NumberFormat("zh-CN", {
+  `¥${new Intl.NumberFormat("zh-CN", {
     maximumFractionDigits: 2,
     minimumFractionDigits: value % 1 === 0 ? 0 : 2,
   }).format(value)}`;
 
 const formatPoints = (value: number) =>
-  `${new Intl.NumberFormat("zh-CN").format(value)} \u79ef\u5206`;
+  `${new Intl.NumberFormat("zh-CN").format(value)} 积分`;
 
 const isWechatBrowser = (userAgent: string) =>
   /MicroMessenger/i.test(userAgent);
@@ -241,6 +248,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const token = useUserStore((state) => state.token);
   const patchUser = useUserStore((state) => state.patchUser);
+  const userPoints = useUserStore((state) => state.user?.points);
 
   const [hydrated, setHydrated] = useState(false);
   const [packages, setPackages] = useState<RechargePackage[]>([]);
@@ -255,6 +263,8 @@ export default function CheckoutPage() {
 
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollCountRef = useRef(0);
+  const isPollingActiveRef = useRef(false);
+  const pollAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setHydrated(useUserStore.persist.hasHydrated());
@@ -266,9 +276,14 @@ export default function CheckoutPage() {
   }, []);
 
   const stopPolling = useCallback(() => {
+    isPollingActiveRef.current = false;
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current);
       pollTimerRef.current = null;
+    }
+    if (pollAbortControllerRef.current) {
+      pollAbortControllerRef.current.abort();
+      pollAbortControllerRef.current = null;
     }
     pollCountRef.current = 0;
   }, []);
@@ -282,10 +297,31 @@ export default function CheckoutPage() {
   }, [stopPolling]);
 
   useEffect(() => {
-    return () => {
+    const handleRouteChangeStart = () => {
       stopPolling();
     };
-  }, [stopPolling]);
+
+    const handlePageHide = () => {
+      stopPolling();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopPolling();
+      }
+    };
+
+    router.events.on("routeChangeStart", handleRouteChangeStart);
+    window.addEventListener("pagehide", handlePageHide);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      router.events.off("routeChangeStart", handleRouteChangeStart);
+      window.removeEventListener("pagehide", handlePageHide);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      stopPolling();
+    };
+  }, [router.events, stopPolling]);
 
   useEffect(() => {
     if (!hydrated || !token) {
@@ -351,21 +387,56 @@ export default function CheckoutPage() {
   const modalPackageName =
     activePayment?.packageName ?? selectedPlan?.name ?? "";
 
-  const refreshUserPoints = useCallback(async () => {
-    try {
-      const response = await getPointsLogs(1, 1);
-      const latestBalance = response.data.list[0]?.balance_after;
-
-      if (typeof latestBalance === "number") {
-        patchUser({ points: latestBalance });
-      }
-    } catch {
-      // Ignore refresh failures after payment success.
+  const getNumericPoints = useCallback((value: unknown) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
     }
-  }, [patchUser]);
+
+    if (typeof value === "string") {
+      const normalized = Number(value);
+
+      if (Number.isFinite(normalized)) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }, []);
+
+  const refreshUserPoints = useCallback(
+    async (fallbackAddedPoints?: number | null) => {
+      try {
+        const response = await getPointsLogs(1, 1);
+        const latestBalance = response.data.list[0]?.balance_after;
+
+        if (typeof latestBalance === "number") {
+          patchUser({ points: latestBalance });
+
+          return;
+        }
+
+        const currentPoints = getNumericPoints(userPoints);
+
+        if (currentPoints !== null && typeof fallbackAddedPoints === "number") {
+          patchUser({ points: currentPoints + fallbackAddedPoints });
+        }
+      } catch {
+        const currentPoints = getNumericPoints(userPoints);
+
+        if (currentPoints !== null && typeof fallbackAddedPoints === "number") {
+          patchUser({ points: currentPoints + fallbackAddedPoints });
+        }
+      }
+    },
+    [getNumericPoints, patchUser, userPoints],
+  );
 
   const pollOrderStatus = useCallback(
     async (orderId: number) => {
+      if (!isPollingActiveRef.current) {
+        return;
+      }
+
       pollCountRef.current += 1;
 
       if (pollCountRef.current > MAX_POLL_TIMES) {
@@ -379,12 +450,27 @@ export default function CheckoutPage() {
       }
 
       try {
-        const response = await getRechargeOrderDetail(orderId);
+        pollAbortControllerRef.current?.abort();
+        const controller = new AbortController();
+
+        pollAbortControllerRef.current = controller;
+        const response = await getRechargeOrderDetail(orderId, {
+          signal: controller.signal,
+        });
+
+        if (pollAbortControllerRef.current === controller) {
+          pollAbortControllerRef.current = null;
+        }
+
+        if (!isPollingActiveRef.current) {
+          return;
+        }
+
         const status = response.data.order.status;
 
         if (status === "paid") {
           stopPolling();
-          await refreshUserPoints();
+          await refreshUserPoints(response.data.order.points);
           clearPaymentFlow();
           addToast({ title: COPY.paySuccess, color: "success" });
 
@@ -398,7 +484,19 @@ export default function CheckoutPage() {
 
           return;
         }
-      } catch {
+      } catch (error: any) {
+        if (
+          error?.name === "CanceledError" ||
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "AbortError"
+        ) {
+          return;
+        }
+
+        if (!isPollingActiveRef.current) {
+          return;
+        }
+
         if (pollCountRef.current >= MAX_POLL_TIMES) {
           stopPolling();
           addToast({
@@ -408,6 +506,10 @@ export default function CheckoutPage() {
 
           return;
         }
+      }
+
+      if (!isPollingActiveRef.current) {
+        return;
       }
 
       pollTimerRef.current = setTimeout(() => {
@@ -430,6 +532,7 @@ export default function CheckoutPage() {
       setQrCodeDataUrl(qrCode);
       setIsQrOpen(true);
       stopPolling();
+      isPollingActiveRef.current = true;
       pollCountRef.current = 0;
       void pollOrderStatus(payment.orderId);
     },
@@ -447,13 +550,26 @@ export default function CheckoutPage() {
       return;
     }
 
+    const isPaymentReturn = hasPaymentReturnMarker();
+
     const restorePayment = async () => {
       try {
-        const response = await getRechargeOrderDetail(pendingPayment.orderId);
+        pollAbortControllerRef.current?.abort();
+        const controller = new AbortController();
+
+        pollAbortControllerRef.current = controller;
+        const response = await getRechargeOrderDetail(pendingPayment.orderId, {
+          signal: controller.signal,
+        });
+
+        if (pollAbortControllerRef.current === controller) {
+          pollAbortControllerRef.current = null;
+        }
+
         const status = response.data.order.status;
 
         if (status === "paid") {
-          await refreshUserPoints();
+          await refreshUserPoints(response.data.order.points);
           clearPaymentFlow();
           addToast({ title: COPY.paySuccess, color: "success" });
 
@@ -473,10 +589,26 @@ export default function CheckoutPage() {
           return;
         }
 
+        if (!isPaymentReturn) {
+          stopPolling();
+
+          return;
+        }
+
+        clearPaymentReturnMarker();
         stopPolling();
+        isPollingActiveRef.current = true;
         pollCountRef.current = 0;
         void pollOrderStatus(pendingPayment.orderId);
-      } catch {
+      } catch (error: any) {
+        if (
+          error?.name === "CanceledError" ||
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "AbortError"
+        ) {
+          return;
+        }
+
         clearPendingPayment();
       }
     };
@@ -511,7 +643,9 @@ export default function CheckoutPage() {
 
       if (!targetPlan?.packageId) {
         addToast({
-          title: packagesLoading ? COPY.packageLoading : COPY.packageUnavailable,
+          title: packagesLoading
+            ? COPY.packageLoading
+            : COPY.packageUnavailable,
           color: "warning",
         });
 
@@ -522,7 +656,10 @@ export default function CheckoutPage() {
 
       try {
         const payType = resolvePayType();
-        const response = await createRechargeOrder(targetPlan.packageId, payType);
+        const response = await createRechargeOrder(
+          targetPlan.packageId,
+          payType,
+        );
         const orderId = response.data.order?.id ?? response.data.orderId;
         const payUrl = response.data.payment?.payUrl ?? response.data.payUrl;
 
@@ -546,6 +683,26 @@ export default function CheckoutPage() {
         };
 
         savePendingPayment(payment);
+
+        if (payType === 3) {
+          markPaymentReturn();
+          const paymentWindow = window.open(
+            payUrl,
+            "_blank",
+            "noopener,noreferrer",
+          );
+
+          if (paymentWindow) {
+            paymentWindow.opener = null;
+
+            return;
+          }
+
+          stopPolling();
+          window.location.href = payUrl;
+
+          return;
+        }
 
         if (payType !== 2 || /^https?:\/\//i.test(payUrl)) {
           markPaymentReturn();
@@ -782,6 +939,7 @@ export default function CheckoutPage() {
         <Modal
           isOpen={isQrOpen}
           placement="center"
+          shouldBlockScroll={false}
           size="md"
           onOpenChange={handleQrOpenChange}
         >

@@ -586,6 +586,25 @@ export default function IndexNewPage() {
                 >
                   浏览画廊
                 </Button>
+                <Button
+                  className="border-white/20 px-8 text-base text-white/80 hover:bg-white/5"
+                  radius="full"
+                  size="lg"
+                  variant="bordered"
+                  onPress={async () => {
+                    try {
+                      const res = await fetch("/app/testApi");
+                      const data = await res.json();
+                      console.log("测试接口返回:", data);
+                      alert("测试接口调用成功");
+                    } catch (error) {
+                      console.error("测试接口调用失败:", error);
+                      alert("测试接口调用失败");
+                    }
+                  }}
+                >
+                  测试接口
+                </Button>
               </div>
             </Reveal>
 

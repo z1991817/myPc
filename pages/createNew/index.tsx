@@ -706,6 +706,11 @@ const CreateNew: React.FC = () => {
                       : "Image to Image Model"}
                   </label>
                   <Select
+                    aria-label={
+                      activeTab === "text-to-image"
+                        ? "选择文生图模型"
+                        : "选择图生图模型"
+                    }
                     className="w-full"
                     classNames={{
                       trigger: "min-h-[72px] py-3",
@@ -1095,8 +1100,10 @@ const CreateNew: React.FC = () => {
                         className="w-full h-full flex flex-col items-center justify-center gap-3 lg:gap-6"
                       >
                         {/* 图片容器 */}
-                        <div
-                          className="w-full max-w-[600px] min-h-[350px] lg:min-h-[500px] max-h-[350px] lg:max-h-[500px] cursor-pointer relative overflow-hidden rounded-xl lg:rounded-2xl flex items-center justify-center"
+                        <button
+                          aria-label="预览生成图片"
+                          className="w-full max-w-[600px] min-h-[350px] lg:min-h-[500px] max-h-[350px] cursor-pointer relative overflow-hidden rounded-xl lg:rounded-2xl flex items-center justify-center border-0 bg-transparent p-0"
+                          type="button"
                           onClick={() => setPreviewImage(image.url)}
                         >
                           {!image.isLoaded && (
@@ -1149,7 +1156,7 @@ const CreateNew: React.FC = () => {
                             src={image.url}
                             onLoad={() => handleImageLoad(image.id)}
                           />
-                        </div>
+                        </button>
 
                         {/* 操作按钮组 */}
                         <div className="w-full max-w-[600px] grid grid-cols-2 gap-2 lg:gap-3">

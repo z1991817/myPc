@@ -1,3 +1,5 @@
+﻿import type { AxiosRequestConfig } from "axios";
+
 import request from "./request";
 
 export interface RechargePackage {
@@ -113,8 +115,9 @@ export const getRechargeOrders = (
 
 export const getRechargeOrderDetail = (
   id: number,
+  config?: AxiosRequestConfig,
 ): Promise<ApiResponse<RechargeOrderDetail>> =>
-  request.get(`/app/recharge/orders/${id}`);
+  request.get(`/app/recharge/orders/${id}`, config);
 
 export const mockPayRechargeOrder = (
   id: number,
@@ -126,3 +129,5 @@ export const getPointsLogs = (
   pageSize: number = 20,
 ): Promise<ApiResponse<PaginatedList<PointsLog>>> =>
   request.get("/app/points/logs", { params: { page, pageSize } });
+
+
