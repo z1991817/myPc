@@ -7,6 +7,7 @@ import { Divider } from "@heroui/divider";
 
 import { login, refreshCurrentUser } from "@/api/auth";
 import { useUserStore } from "@/store/useUserStore";
+import { Head } from "@/layouts/head";
 
 /**
  * 登录页面组件
@@ -49,7 +50,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
+    <>
+      <Head />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="flex flex-col gap-1 px-8 pt-8 pb-4">
           <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -108,6 +111,7 @@ export default function LoginPage() {
           </p>
         </CardFooter>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }

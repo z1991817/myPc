@@ -35,6 +35,7 @@ import {
 import LoginModal from "@/components/LoginModal";
 import TopNavbar from "@/components/TopNavbar";
 import Footer from "@/components/Footer";
+import { Head } from "@/layouts/head";
 import { useUserStore } from "@/store/useUserStore";
 import { refreshCurrentUser } from "@/api/auth";
 
@@ -650,6 +651,7 @@ const CreateNew: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#030712]">
+      <Head />
       {/* 顶部导航 */}
       <TopNavbar />
 

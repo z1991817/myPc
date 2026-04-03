@@ -18,7 +18,6 @@ import { useRouter } from "next/router";
 import DefaultLayout from "@/layouts/default";
 import { getGalleryList, GalleryImageItem } from "@/api/gallery";
 import { CopyIcon } from "@/components/icons";
-import Footer from "@/components/Footer";
 import TopNavbar from "@/components/TopNavbar";
 
 /**
@@ -269,7 +268,7 @@ export default function GalleryPage() {
   }, [handleScroll]);
 
   return (
-    <DefaultLayout fullWidth hideFooter hideNavbar>
+    <DefaultLayout fullWidth hideNavbar>
       <div className="min-h-dvh bg-[#030712] text-white">
         <TopNavbar />
         <div className="px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pt-32">
@@ -330,7 +329,6 @@ export default function GalleryPage() {
         <div ref={observerRef} className="h-1" />
           </div>
         </div>
-        <Footer />
       </div>
 
       {/* 图片预览 Modal */}
@@ -450,3 +448,4 @@ export default function GalleryPage() {
     </DefaultLayout>
   );
 }
+

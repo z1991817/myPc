@@ -10,7 +10,7 @@ export type SeoMeta = {
 
 const pageSeoByPathname: Record<string, SeoMeta> = {
   "/": {
-    title: "免费 AI 图片生成器",
+    title: "AI图像生成器 - 专业智能绘画平台 | Nano banana图像生成器",
     description: siteConfig.description,
     keywords: siteConfig.defaultKeywords,
     canonicalPath: "/",
@@ -30,7 +30,7 @@ const pageSeoByPathname: Record<string, SeoMeta> = {
     canonicalPath: "/gallery",
   },
   "/createNew": {
-    title: "在线 AI 图片生成器",
+    title: "AI图像生成器 - 专业智能绘画平台 | Nano banana图像生成器",
     description:
       "使用 ArtImg 在线生成 AI 图片，支持写实人像、动漫插画、Logo 设计、商业视觉、多语言文字排版、批量生成与商用授权。",
     keywords: [
@@ -133,8 +133,8 @@ export function getPageSeo(pathname: string): SeoMeta {
 export function getSeoTitle(pathname: string) {
   const meta = getPageSeo(pathname);
 
-  return meta.title === siteConfig.name
-    ? siteConfig.name
+  return meta.title === siteConfig.name || meta.title.includes("|")
+    ? meta.title
     : `${meta.title} | ${siteConfig.name}`;
 }
 
@@ -191,3 +191,8 @@ export function getIndexableSitemapEntries() {
     priority: path === "/" ? "1.0" : path === "/pricing" ? "0.9" : "0.8",
   }));
 }
+
+
+
+
+

@@ -18,7 +18,6 @@ import {
   EditIcon,
   DeleteIcon,
 } from "@/components/icons";
-import Footer from "@/components/Footer";
 import TopNavbar from "@/components/TopNavbar";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -396,7 +395,7 @@ export default function MyCreationsPage() {
   };
 
   return (
-    <DefaultLayout fullWidth hideFooter hideNavbar>
+    <DefaultLayout fullWidth hideNavbar>
       <div className="min-h-dvh bg-[#030712] text-white">
         <TopNavbar />
         <div className="px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pt-32">
@@ -448,7 +447,6 @@ export default function MyCreationsPage() {
             )}
           </div>
         </div>
-        <Footer />
       </div>
 
       {/* 返回顶部按钮 */}
@@ -475,3 +473,4 @@ export default function MyCreationsPage() {
     </DefaultLayout>
   );
 }
+

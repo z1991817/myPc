@@ -24,7 +24,6 @@ import {
   getRechargePackages,
   type RechargePackage,
 } from "@/api/recharge";
-import Footer from "@/components/Footer";
 import TopNavbar from "@/components/TopNavbar";
 import DefaultLayout from "@/layouts/default";
 import { useUserStore } from "@/store/useUserStore";
@@ -704,7 +703,7 @@ export default function CheckoutPage() {
   );
 
   return (
-    <DefaultLayout fullWidth hideFooter hideNavbar>
+    <DefaultLayout fullWidth hideNavbar>
       <div className="min-h-dvh bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.16),transparent_24%),radial-gradient(circle_at_85%_10%,rgba(168,85,247,0.16),transparent_20%),linear-gradient(180deg,#07111f_0%,#030712_55%,#02030a_100%)] text-white">
         <TopNavbar />
 
@@ -890,9 +889,6 @@ export default function CheckoutPage() {
             </div>
           </div>
         </section>
-
-        <Footer />
-
         <Modal
           isOpen={isQrOpen}
           placement="center"
@@ -947,3 +943,4 @@ export default function CheckoutPage() {
     </DefaultLayout>
   );
 }
+
