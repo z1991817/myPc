@@ -20,7 +20,6 @@ import QRCode from "qrcode";
 
 import {
   createRechargeOrder,
-  getPointsLogs,
   getRechargeOrderDetail,
   getRechargePackages,
   type RechargePackage,
@@ -29,6 +28,7 @@ import Footer from "@/components/Footer";
 import TopNavbar from "@/components/TopNavbar";
 import DefaultLayout from "@/layouts/default";
 import { useUserStore } from "@/store/useUserStore";
+import { refreshCurrentUser } from "@/api/auth";
 
 type PlanTemplate = {
   id: number;
@@ -247,9 +247,6 @@ const clearPendingPayment = () => {
 export default function CheckoutPage() {
   const router = useRouter();
   const token = useUserStore((state) => state.token);
-  const patchUser = useUserStore((state) => state.patchUser);
-  const userPoints = useUserStore((state) => state.user?.points);
-
   const [hydrated, setHydrated] = useState(false);
   const [packages, setPackages] = useState<RechargePackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
@@ -387,49 +384,9 @@ export default function CheckoutPage() {
   const modalPackageName =
     activePayment?.packageName ?? selectedPlan?.name ?? "";
 
-  const getNumericPoints = useCallback((value: unknown) => {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return value;
-    }
-
-    if (typeof value === "string") {
-      const normalized = Number(value);
-
-      if (Number.isFinite(normalized)) {
-        return normalized;
-      }
-    }
-
-    return null;
+  const refreshUserPoints = useCallback(async () => {
+    await refreshCurrentUser({ silent: true });
   }, []);
-
-  const refreshUserPoints = useCallback(
-    async (fallbackAddedPoints?: number | null) => {
-      try {
-        const response = await getPointsLogs(1, 1);
-        const latestBalance = response.data.list[0]?.balance_after;
-
-        if (typeof latestBalance === "number") {
-          patchUser({ points: latestBalance });
-
-          return;
-        }
-
-        const currentPoints = getNumericPoints(userPoints);
-
-        if (currentPoints !== null && typeof fallbackAddedPoints === "number") {
-          patchUser({ points: currentPoints + fallbackAddedPoints });
-        }
-      } catch {
-        const currentPoints = getNumericPoints(userPoints);
-
-        if (currentPoints !== null && typeof fallbackAddedPoints === "number") {
-          patchUser({ points: currentPoints + fallbackAddedPoints });
-        }
-      }
-    },
-    [getNumericPoints, patchUser, userPoints],
-  );
 
   const pollOrderStatus = useCallback(
     async (orderId: number) => {
@@ -470,7 +427,7 @@ export default function CheckoutPage() {
 
         if (status === "paid") {
           stopPolling();
-          await refreshUserPoints(response.data.order.points);
+          await refreshUserPoints();
           clearPaymentFlow();
           addToast({ title: COPY.paySuccess, color: "success" });
 
@@ -569,7 +526,7 @@ export default function CheckoutPage() {
         const status = response.data.order.status;
 
         if (status === "paid") {
-          await refreshUserPoints(response.data.order.points);
+          await refreshUserPoints();
           clearPaymentFlow();
           addToast({ title: COPY.paySuccess, color: "success" });
 

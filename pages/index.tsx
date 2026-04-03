@@ -25,6 +25,7 @@ import {
 
 import DefaultLayout from "@/layouts/default";
 import { getGalleryList, GalleryImageItem } from "@/api/gallery";
+import { getTestApi } from "@/api/test";
 import Aurora from "@/components/Aurora";
 import TopNavbar from "@/components/TopNavbar";
 
@@ -593,8 +594,7 @@ export default function IndexNewPage() {
                   variant="bordered"
                   onPress={async () => {
                     try {
-                      const res = await fetch("/app/testApi");
-                      const data = await res.json();
+                      const data = await getTestApi();
                       console.log("测试接口返回:", data);
                       alert("测试接口调用成功");
                     } catch (error) {

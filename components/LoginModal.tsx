@@ -7,7 +7,7 @@ import { Link } from "@heroui/link";
 import { addToast } from "@heroui/toast";
 import { useRouter } from "next/router";
 
-import { login, register } from "@/api/auth";
+import { login, refreshCurrentUser, register } from "@/api/auth";
 import { useUserStore } from "@/store/useUserStore";
 
 /** LoginModal 组件 Props */
@@ -146,6 +146,10 @@ export default function LoginModal({
           name: username,
         },
       );
+      await refreshCurrentUser({
+        silent: true,
+        clearOnUnauthorized: false,
+      });
       // 注册成功 toast 提示
       if (!isLogin) {
         addToast({ title: "注册成功", color: "success" });

@@ -5,7 +5,7 @@ import { Button } from "@heroui/button";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 
-import { login } from "@/api/auth";
+import { login, refreshCurrentUser } from "@/api/auth";
 import { useUserStore } from "@/store/useUserStore";
 
 /**
@@ -36,6 +36,10 @@ export default function LoginPage() {
           name: username,
         },
       );
+      await refreshCurrentUser({
+        silent: true,
+        clearOnUnauthorized: false,
+      });
       router.push("/");
     } catch (err: any) {
       setError(err.response?.data?.message || "登录失败，请检查用户名和密码");

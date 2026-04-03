@@ -36,6 +36,7 @@ import LoginModal from "@/components/LoginModal";
 import TopNavbar from "@/components/TopNavbar";
 import Footer from "@/components/Footer";
 import { useUserStore } from "@/store/useUserStore";
+import { refreshCurrentUser } from "@/api/auth";
 
 /**
  * 从markdown内容中提取图片URL
@@ -207,6 +208,10 @@ const CreateNew: React.FC = () => {
 
   const promptLength = useMemo(() => prompt.length, [prompt]);
 
+  const syncUserProfile = () => {
+    void refreshCurrentUser({ silent: true });
+  };
+
   // 验证表单是否可提交
   const canGenerate = useMemo(() => {
     return prompt.trim().length > 0 && !isGenerating;
@@ -349,6 +354,7 @@ const CreateNew: React.FC = () => {
             };
 
             setGeneratedImages([newImage]);
+            syncUserProfile();
 
             addToast({
               title: "生成成功",
@@ -400,6 +406,7 @@ const CreateNew: React.FC = () => {
             );
 
             setGeneratedImages(newImages);
+            syncUserProfile();
 
             // 显示成功提示
             addToast({
@@ -439,6 +446,7 @@ const CreateNew: React.FC = () => {
             };
 
             setGeneratedImages([newImage]);
+            syncUserProfile();
 
             // 显示成功提示
             addToast({
@@ -467,6 +475,7 @@ const CreateNew: React.FC = () => {
               }));
 
             setGeneratedImages(newImages);
+            syncUserProfile();
 
             // 显示成功提示
             addToast({

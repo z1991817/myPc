@@ -33,6 +33,7 @@ import {
   type RechargePackage,
 } from "@/api/recharge";
 import { useUserStore } from "@/store/useUserStore";
+import { refreshCurrentUser } from "@/api/auth";
 
 type ActiveTab = "packages" | "orders" | "logs";
 
@@ -122,8 +123,6 @@ const StatusChip = ({ status }: { status: string }) => {
 export default function RechargeCenter() {
   const token = useUserStore((state) => state.token);
   const user = useUserStore((state) => state.user);
-  const patchUser = useUserStore((state) => state.patchUser);
-
   const [hydrated, setHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("packages");
   const [packages, setPackages] = useState<RechargePackage[]>([]);
@@ -281,10 +280,7 @@ export default function RechargeCenter() {
     setPayingOrderId(orderId);
     try {
       const response = await mockPayRechargeOrder(orderId);
-
-      if (Number.isFinite(response.data.currentPoints)) {
-        patchUser({ points: response.data.currentPoints });
-      }
+      await refreshCurrentUser({ silent: true });
 
       addToast({
         title: response.data.alreadyPaid ? "该订单已支付" : "模拟支付成功",
