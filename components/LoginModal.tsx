@@ -29,7 +29,7 @@ export default function LoginModal({
   isOpen,
   onClose,
   onSuccess,
-  redirectTo = "/",
+  redirectTo = null,
 }: LoginModalProps) {
   const { setToken, setUser } = useUserStore();
   const router = useRouter();
@@ -155,7 +155,7 @@ export default function LoginModal({
         addToast({ title: "注册成功", color: "success" });
       }
       handleClose();
-      // 跳转首页
+      // 仅在显式传入跳转地址时才执行跳转
       onSuccess?.();
       if (redirectTo) {
         void router.push(redirectTo);

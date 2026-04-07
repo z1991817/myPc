@@ -11,7 +11,9 @@ import { appWithTranslation } from "next-i18next";
 
 import { fontSans, fontMono } from "@/config/fonts";
 import InsufficientPointsModal from "@/components/InsufficientPointsModal";
+import LoginModal from "@/components/LoginModal";
 import { useInsufficientPointsModal } from "@/store/useInsufficientPointsModal";
+import { useLoginModalStore } from "@/store/useLoginModalStore";
 import { useUserStore } from "@/store/useUserStore";
 import { refreshCurrentUser } from "@/api/auth";
 import "@/styles/globals.css";
@@ -23,6 +25,10 @@ function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [queryClient] = useState(() => new QueryClient());
   const { isOpen, message, closeModal } = useInsufficientPointsModal();
+  const {
+    isOpen: isLoginModalOpen,
+    closeModal: closeLoginModal,
+  } = useLoginModalStore();
 
   const lastUserRefreshAt = useRef(0);
   const refreshUserProfile = useCallback(async () => {
@@ -75,6 +81,7 @@ function App({ Component, pageProps }: AppProps) {
             regionProps={{ className: "z-[70]" }}
             toastOffset={80}
           />
+          <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
           {/* 全局积分不足模态框 */}
           <InsufficientPointsModal
             isOpen={isOpen}

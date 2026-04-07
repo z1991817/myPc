@@ -493,8 +493,8 @@ const CreateNew: React.FC = () => {
     } catch (error: any) {
       console.error("生成失败:", error);
 
-      // 如果是 409 错误（积分不足），不显示错误模态框，因为全局模态框已经处理
-      if (error?.response?.status === 409) {
+      // 401 和 409 都由全局交互处理，这里不再重复弹页面级错误模态框
+      if (error?.response?.status === 401 || error?.response?.status === 409) {
         return;
       }
 
