@@ -3,10 +3,6 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
-import {
-  ReactCompareSlider,
-  ReactCompareSliderImage,
-} from "react-compare-slider";
 import Masonry from "react-masonry-css";
 import { motion, animate, useInView, useReducedMotion } from "framer-motion";
 import { Button } from "@heroui/button";
@@ -15,12 +11,21 @@ import { Chip } from "@heroui/chip";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Divider } from "@heroui/divider";
 import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
+import {
   Sparkles,
   Palette,
   Zap,
   Maximize2,
   Image as ImageLucide,
   Check,
+  Gift,
+  Rocket,
 } from "lucide-react";
 
 import DefaultLayout from "@/layouts/default";
@@ -28,6 +33,8 @@ import { getGalleryList, GalleryImageItem } from "@/api/gallery";
 import { getTestApi } from "@/api/test";
 import Aurora from "@/components/Aurora";
 import TopNavbar from "@/components/TopNavbar";
+import { useLoginModalStore } from "@/store/useLoginModalStore";
+import { useUserStore } from "@/store/useUserStore";
 
 /* ============================
    类型定义
@@ -123,43 +130,23 @@ const landingNavItems = [
 const compareSlides: CompareSlide[] = [
   {
     id: 1,
-    title: "人像美化与商业肖像",
+    title: "疯狂动物城自拍",
     tag: "Portrait Workflow",
     description:
-      "Nano Banana 2 不只是简单磨皮，而是会理解肤质、轮廓、妆面和氛围光。它能在保留真实表情与人物辨识度的前提下，快速提升人像质感，让普通照片获得接近商业摄影棚的成片效果。",
+      "创作一张超逼真的自拍照片。请使用上传的图片作为人物参考——请勿修改、更改或调整上传图片中人物的任何面部特征、发型、服装或配饰。将《疯狂动物城》中的朱迪·霍普斯（迪士尼角色）添加到真人旁边。场景：一间昏暗拥挤的电影院。背景中巨大的银幕正在播放《疯狂动物城》的片段。采用电影灯光，营造温暖的氛围光。构图：自拍角度。图片 1 中的真人（请完全保留所有原始特征）正在与朱迪·霍普斯一起自拍。[在此描述姿势/动作]。两人都清晰对焦。采用超高清 8K 画质，超逼真的摄影风格，自​​然光与屏幕光晕混合，浅景深。重要提示：人物必须与上传的参考图片完全一致——发型、服装、配饰或面部细节均不得更改。唯一添加的元素应该是自然融入场景的《疯狂动物城》角色。",
     detail:
-      "适合社媒封面、个人写真、品牌肖像和宣传海报。拖动中线后你会发现，AI 处理后并没有丢失原始神态，反而进一步强化了肤色层次、服装纹理与画面氛围。",
+      "这类合影创作特别适合角色联动、IP 共创和社媒传播。原图人物保持身份一致，AI 负责把角色、灯光和环境自然拼接进同一画面里。",
     bullets: [
-      "保留人物神态与皮肤真实纹理",
-      "统一商业级光影与高级色调",
-      "适合写真封面、品牌 KV 与社媒内容",
+      "人物身份与原图保持一致",
+      "支持角色植入与场景氛围融合",
+      "适合社媒传播、创意海报和活动内容",
     ],
     beforeImage:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=80",
+      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/input1.jpg",
     afterImage:
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=1200&q=80",
+      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/out1.jfif",
     beforeLabel: "原始照片",
     afterLabel: "AI 精修后",
-  },
-  {
-    id: 2,
-    title: "电商主图与营销素材",
-    tag: "E-commerce Asset",
-    description:
-      "从普通商品拍摄图到高转化率主图，Nano Banana 2 可以快速完成背景重塑、质感增强和场景包装。无论是新品上线、活动页投放还是社媒广告，你都能在极短时间内产出统一风格的营销素材。",
-    detail:
-      "相比传统后期流程，它更适合高频上新和批量投放场景。你可以先生成白底图，再延展成场景图、促销海报和细节展示图，整体产能会有明显提升。",
-    bullets: [
-      "支持白底图、场景图和广告图连续生产",
-      "统一商品质感、光感与背景风格",
-      "适合电商首页、详情页与投流素材",
-    ],
-    beforeImage:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
-    afterImage:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
-    beforeLabel: "普通商品图",
-    afterLabel: "营销成片",
   },
   {
     id: 3,
@@ -175,9 +162,9 @@ const compareSlides: CompareSlide[] = [
       "适合旅游海报、品牌背景与壁纸素材",
     ],
     beforeImage:
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80",
+      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/input2.png",
     afterImage:
-      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80",
+      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/out2.jfif",
     beforeLabel: "原始风景",
     afterLabel: "氛围增强后",
   },
@@ -195,9 +182,9 @@ const compareSlides: CompareSlide[] = [
       "适合纪念册、展览与数字化存档",
     ],
     beforeImage:
-      "https://images.unsplash.com/photo-1504194104404-433180773017?auto=format&fit=crop&w=1200&q=80",
+      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/input3.webp",
     afterImage:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?auto=format&fit=crop&w=1200&q=80",
+      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/out3.webp",
     beforeLabel: "旧照片",
     afterLabel: "修复后",
   },
@@ -306,13 +293,13 @@ const pricingPlans: PricingPlan[] = [
     description: "一次投资，锁定早期红利",
     features: [
       "一次性获得 15,000 积分",
-      "终身特权：每月自动发放 500 积分",
-      "官网展示「创世赞助者」专属徽章",
-      "所有专业版功能",
+      "优先排队出图特权",
+      "无水印下载",
+      "商业使用许可",
       "优先技术支持",
     ],
     isPopular: false,
-    ctaText: "抢占创世席位",
+    ctaText: "立即购买",
     ctaHref: "/checkout",
   },
 ];
@@ -492,10 +479,23 @@ function CheckIcon() {
 
 export default function IndexNewPage() {
   const router = useRouter();
+  const token = useUserStore((state) => state.token);
+  const openLoginModal = useLoginModalStore((state) => state.openModal);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+  const [announcementReady, setAnnouncementReady] = useState(false);
 
   /** 画廊数据状态 */
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
+
+  const handleCloseAnnouncement = () => {
+    setIsAnnouncementOpen(false);
+  };
+
+  const handleClaimPoints = () => {
+    setIsAnnouncementOpen(false);
+    openLoginModal();
+  };
 
   /** 加载画廊数据 */
   useEffect(() => {
@@ -516,10 +516,100 @@ export default function IndexNewPage() {
     fetchGallery();
   }, []);
 
+  useEffect(() => {
+    const syncAnnouncementVisibility = () => {
+      setAnnouncementReady(true);
+      setIsAnnouncementOpen(!useUserStore.getState().token);
+    };
+
+    if (useUserStore.persist.hasHydrated()) {
+      syncAnnouncementVisibility();
+    }
+
+    const unsubscribeHydration = useUserStore.persist.onFinishHydration(() => {
+      syncAnnouncementVisibility();
+    });
+
+    return () => {
+      unsubscribeHydration();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!announcementReady) {
+      return;
+    }
+
+    if (token) {
+      setIsAnnouncementOpen(false);
+    }
+  }, [announcementReady, token]);
+
   return (
     <DefaultLayout fullWidth hideNavbar>
       <div className="min-h-screen overflow-x-hidden bg-[#030712]">
         <TopNavbar />
+        {announcementReady && !token ? (
+          <Modal
+            isOpen={isAnnouncementOpen}
+            placement="center"
+            shouldBlockScroll={false}
+            onClose={handleCloseAnnouncement}
+          >
+            <ModalContent className="overflow-hidden border border-amber-300/20 bg-[#0b1020] text-white shadow-2xl shadow-amber-500/10">
+              <ModalHeader className="border-b border-white/10 px-6 py-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 shadow-lg shadow-amber-500/30">
+                    <Rocket className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-amber-300/80">
+                      NEW SITE
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black text-white">
+                      新站上线
+                    </h2>
+                  </div>
+                </div>
+              </ModalHeader>
+              <ModalBody className="px-6 py-6">
+                <div className="rounded-[1.5rem] border border-amber-400/20 bg-gradient-to-br from-amber-400/12 via-orange-400/10 to-transparent p-5 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-slate-950 shadow-xl shadow-amber-500/30">
+                    <Gift className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm uppercase tracking-[0.35em] text-amber-200/70">
+                    限时福利
+                  </p>
+                  <p className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">
+                    注册就送
+                    <span className="mx-2 bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">
+                      100
+                    </span>
+                    积分
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-white/68">
+                    现在注册即可领取新站专属积分，直接开始体验 AI 图片生成、修图和创作流程。
+                  </p>
+                </div>
+              </ModalBody>
+              <ModalFooter className="border-t border-white/10 px-6 py-5">
+                <Button
+                  className="text-white/70"
+                  variant="light"
+                  onPress={handleCloseAnnouncement}
+                >
+                  稍后再看
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-amber-400 to-orange-500 font-bold text-slate-950 shadow-lg shadow-amber-500/30"
+                  onPress={handleClaimPoints}
+                >
+                  立即领取
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+        ) : null}
         {/* 顶部导航 */}
 
         {/* ============================================
@@ -635,7 +725,7 @@ export default function IndexNewPage() {
           <div className="mx-auto max-w-7xl">
             <Reveal>
               <SectionHeading
-                description="拖动滑块查看处理前后的差异。Nano Banana 不只是生成图片，而是把修图、重绘、增强与风格化整合成一条更高效的视觉生产链路。"
+                description="从原始素材到处理结果，每个场景都会展示一组前后视觉变化。Nano Banana 把修图、增强、重绘与风格化整合成一条更高效的视觉生产链路。"
                 eyebrow="Use Cases"
                 title="看看 AI 能做什么"
               />
@@ -644,13 +734,12 @@ export default function IndexNewPage() {
             <Reveal delay={0.08}>
               <Swiper
                 loop
-                autoplay={{ delay: 6500, disableOnInteraction: false }}
+                autoplay={{ delay: 886500, disableOnInteraction: false }}
                 modules={[Autoplay, Pagination]}
                 pagination={{
                   clickable: true,
                   el: ".compare-pagination",
                 }}
-                simulateTouch={false}
                 slidesPerView={1}
                 spaceBetween={40}
                 speed={850}
@@ -658,86 +747,61 @@ export default function IndexNewPage() {
                 {compareSlides.map((slide) => (
                   <SwiperSlide key={slide.id}>
                     <Card className="overflow-hidden border border-white/8 bg-white/[0.03] shadow-2xl shadow-black/25">
-                      <CardBody className="grid gap-10 p-5 md:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-                        {/* 左侧对比区域 */}
-                        <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10">
-                          <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-white/15 bg-black/50 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
-                            {slide.beforeLabel}
-                          </div>
-                          <div className="pointer-events-none absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/50 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
-                            {slide.afterLabel}
-                          </div>
-                          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/12 bg-black/45 px-3 py-1 text-xs text-white/70 backdrop-blur-sm">
-                            拖动中线对比效果
-                          </div>
-
-                          <ReactCompareSlider
-                            itemOne={
-                              <ReactCompareSliderImage
+                      <CardBody className="p-5 md:p-8">
+                        <div className="grid gap-6">
+                          {/* 图片区域 */}
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a1324]">
+                              <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
+                                {slide.beforeLabel}
+                              </div>
+                              <img
                                 alt={`${slide.title} - 处理前`}
+                                className="w-full h-full object-contain max-h-[400px] md:max-h-[500px] transition-opacity duration-300 opacity-100"
                                 src={slide.beforeImage}
-                                style={{ objectFit: "cover" }}
                               />
-                            }
-                            itemTwo={
-                              <ReactCompareSliderImage
-                                alt={`${slide.title} - 处理后`}
-                                src={slide.afterImage}
-                                style={{ objectFit: "cover" }}
-                              />
-                            }
-                            position={50}
-                            style={{
-                              height: "100%",
-                              minHeight: "320px",
-                              maxHeight: "500px",
-                            }}
-                          />
-                        </div>
+                            </div>
 
-                        {/* 右侧文字区域 */}
-                        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-                          <Chip
-                            className="mb-4 border border-blue-500/30 bg-blue-500/10 text-xs text-blue-300"
-                            radius="full"
-                            variant="flat"
+                            <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a1324]">
+                              <div className="pointer-events-none absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
+                                {slide.afterLabel}
+                              </div>
+                              <img
+                                alt={`${slide.title} - 处理后`}
+                                className="w-full h-full object-contain max-h-[400px] md:max-h-[500px] transition-opacity duration-300 opacity-100"
+                                src={slide.afterImage}
+                              />
+                            </div>
+                          </div>
+
+                          {/* 文字区域 */}
+                          <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+                           <Chip
+                             className="mb-4 border border-blue-500/30 bg-blue-500/10 text-xs text-blue-300"
+                             radius="full"
+                             variant="flat"
                           >
                             {slide.tag}
                           </Chip>
 
-                          <h3 className="mb-4 text-2xl font-bold text-white sm:text-3xl">
-                            {slide.title}
-                          </h3>
+                            <h3 className="mb-4 text-2xl font-bold text-white sm:text-3xl line-clamp-1">
+                              {slide.title}
+                            </h3>
 
-                          <p className="mb-4 text-base leading-8 text-white/62">
-                            {slide.description}
-                          </p>
-
-                          <p className="mb-6 text-sm leading-7 text-white/40">
-                            {slide.detail}
-                          </p>
-
-                          <div className="mb-6 grid w-full gap-3">
-                            {slide.bullets.map((bullet) => (
-                              <div
-                                key={bullet}
-                                className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-white/72"
-                              >
-                                {bullet}
-                              </div>
-                            ))}
+                            <p className="mb-4 text-base leading-8 text-white/62 line-clamp-2">
+                              {slide.description}
+                            </p>
+                            <Button
+                              as={NextLink}
+                              className="border-white/15 text-white/75 hover:bg-white/5"
+                              href="/createNew"
+                              radius="full"
+                              size="md"
+                              variant="bordered"
+                            >
+                              立即体验
+                            </Button>
                           </div>
-
-                          <Button
-                            as={NextLink}
-                            className="border-white/15 text-white/75 hover:bg-white/5"
-                            href="/createNew"
-                            radius="full"
-                            size="md"
-                            variant="bordered"
-                          >
-                            立即体验
-                          </Button>
                         </div>
                       </CardBody>
                     </Card>
@@ -762,7 +826,7 @@ export default function IndexNewPage() {
               <SectionHeading
                 description="Nano Banana 2 攻克了 AI 图像生成领域最棘手的难题。以下是专业人士信赖它进行生产工作的原因。"
                 eyebrow="Core Technology"
-                title="Nano Banana 2 的四大技术支柱"
+                title="Nano Banana 2 的技术特点"
               />
             </Reveal>
 

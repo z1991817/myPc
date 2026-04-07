@@ -7,7 +7,7 @@ import { Link } from "@heroui/link";
 import { addToast } from "@heroui/toast";
 import { useRouter } from "next/router";
 
-import { login, refreshCurrentUser, register } from "@/api/auth";
+import { login, refreshCurrentUser, register, sendEmailCode } from "@/api/auth";
 import { useUserStore } from "@/store/useUserStore";
 
 /** LoginModal 组件 Props */
@@ -40,6 +40,7 @@ export default function LoginModal({
   const [email, setEmail] = useState("");
   const [emailCode, setEmailCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
   const [error, setError] = useState("");
   // 验证码倒计时
   const [countdown, setCountdown] = useState(0);
@@ -61,6 +62,7 @@ export default function LoginModal({
     setEmailCode("");
     setError("");
     setIsLoading(false);
+    setIsSendingCode(false);
     // 清除倒计时
     setCountdown(0);
     if (timerRef.current) {
@@ -83,8 +85,8 @@ export default function LoginModal({
   };
 
   // 发送验证码
-  const handleSendCode = useCallback(() => {
-    if (!email || countdown > 0) return;
+  const handleSendCode = useCallback(async () => {
+    if (!email || countdown > 0 || isSendingCode) return;
 
     // 简单邮箱格式校验
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -93,22 +95,33 @@ export default function LoginModal({
       return;
     }
 
-    setError("");
-    addToast({ title: "验证码已发送", color: "success" });
-    // 开始 60 秒倒计时
-    setCountdown(60);
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) clearInterval(timerRef.current);
+    try {
+      setError("");
+      setIsSendingCode(true);
+      await sendEmailCode(email);
+      addToast({ title: "验证码已发送", color: "success" });
+      // 开始 60 秒倒计时
+      setCountdown(60);
+      timerRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) clearInterval(timerRef.current);
 
-          return 0;
-        }
+            return 0;
+          }
 
-        return prev - 1;
-      });
-    }, 1000);
-  }, [email, countdown]);
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || "验证码发送失败，请稍后重试";
+
+      setError(message);
+      addToast({ title: message, color: "danger" });
+    } finally {
+      setIsSendingCode(false);
+    }
+  }, [countdown, email, isSendingCode]);
 
   // 处理提交
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,7 +241,7 @@ export default function LoginModal({
                       新用户奖励
                     </span>
                     <p className="text-sm font-bold text-white mt-1">
-                      获得 20 免费点数
+                      获得 100 免费积分
                     </p>
                   </div>
                 </div>
@@ -310,8 +323,9 @@ export default function LoginModal({
                         ? "bg-primary text-white"
                         : "text-white/40 bg-transparent"
                     }`}
-                    isDisabled={!isEmailValid || countdown > 0}
-                    size="sm"
+                      isDisabled={!isEmailValid || countdown > 0 || isSendingCode}
+                      isLoading={isSendingCode}
+                      size="sm"
                     variant={
                       isEmailValid && countdown === 0 ? "solid" : "light"
                     }

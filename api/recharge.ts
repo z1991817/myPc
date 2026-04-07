@@ -50,6 +50,7 @@ export interface PointsLog {
   order_id: number | null;
   remark: string | null;
   created_at: string;
+  order_no: string | null;
 }
 
 interface ApiResponse<T> {

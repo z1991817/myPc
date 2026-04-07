@@ -649,6 +649,13 @@ const CreateNew: React.FC = () => {
     }
   };
 
+  /**
+   * 将已生成图片对应的提示词回填到输入框，便于继续修改
+   */
+  const handleReusePrompt = (imagePrompt: string) => {
+    setPrompt(imagePrompt);
+  };
+
   return (
     <div className="min-h-screen bg-[#030712]">
       <Head />
@@ -1193,6 +1200,7 @@ const CreateNew: React.FC = () => {
                             startContent={
                               <RotateCwIcon className="w-4 h-4 lg:w-5 lg:h-5" />
                             }
+                            onPress={() => handleReusePrompt(image.prompt)}
                           >
                             继续修改
                           </Button>

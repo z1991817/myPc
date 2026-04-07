@@ -558,8 +558,8 @@ export default function MyOrdersPage() {
                                         关联订单
                                       </div>
                                       <div className="mt-2 text-base font-medium">
-                                        {item.order_id
-                                          ? `#${item.order_id}`
+                                        {item.order_no
+                                          ? `#${item.order_no}`
                                           : "--"}
                                       </div>
                                     </div>
