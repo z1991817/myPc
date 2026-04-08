@@ -12,11 +12,13 @@ import {
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Masonry from "react-masonry-css";
 import { useRouter } from "next/router";
 
 import DefaultLayout from "@/layouts/default";
 import { getGalleryList, GalleryImageItem } from "@/api/gallery";
+import { normalizeImageURL } from "@/lib/image-base-url";
 import { CopyIcon } from "@/components/icons";
 import TopNavbar from "@/components/TopNavbar";
 
@@ -34,7 +36,7 @@ interface ImageCardProps {
 const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -57,9 +59,11 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
   }, []);
 
   return (
-    <div
+    <button
       ref={cardRef}
-      className="mb-4 cursor-pointer"
+      aria-label={`预览图片：${image.prompt}`}
+      className="mb-4 block w-full cursor-pointer border-0 bg-transparent p-0 text-left"
+      type="button"
       onClick={() => onPreview(image)}
     >
       <Card className="overflow-hidden group">
@@ -72,11 +76,13 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
 
             {/* 图片 - 懒加载 */}
             {isVisible && (
-              <img
+              <Image
+                fill
                 alt={image.prompt}
                 className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${
                   isLoaded ? "opacity-100" : "opacity-0"
                 }`}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 src={image.cos_url}
                 onLoad={() => setIsLoaded(true)}
               />
@@ -91,7 +97,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
           </div>
         </CardBody>
       </Card>
-    </div>
+    </button>
   );
 };
 
@@ -200,8 +206,14 @@ export default function GalleryPage() {
 
       if (response.code === 200) {
         const { list, pagination } = response.data;
+        const normalizedList = list.map((item) => ({
+          ...item,
+          cos_url: normalizeImageURL(item.cos_url),
+        }));
 
-        setImages((prev) => (pageNum === 1 ? list : [...prev, ...list]));
+        setImages((prev) =>
+          pageNum === 1 ? normalizedList : [...prev, ...normalizedList],
+        );
         setHasMore(pagination.page < pagination.totalPages);
       }
     } catch (error) {
@@ -273,60 +285,62 @@ export default function GalleryPage() {
         <TopNavbar />
         <div className="px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pt-32">
           <div className="max-w-[1280px] mx-auto">
-        {/* 文字区域 */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="tracking-tight inline font-semibold from-[#FF1CF7] to-[#b249f8] text-[clamp(1rem,10vw,2rem)] sm:text-[clamp(1rem,10vw,3rem)] lg:text-5xl bg-clip-text text-transparent bg-linear-to-b">
-            AI 艺术图库
-          </h1>
-          <p className="text-lg text-default-600 max-w-3xl mx-auto">
-            探索令人惊叹的 AI
-            生成图像，並发掘其背后的提示词。获取灵感，创造您自己的杰作。
-          </p>
-        </motion.div>
+            {/* 文字区域 */}
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+              initial={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.6 }}
+            >
+              <h1 className="tracking-tight inline font-semibold from-[#FF1CF7] to-[#b249f8] text-[clamp(1rem,10vw,2rem)] sm:text-[clamp(1rem,10vw,3rem)] lg:text-5xl bg-clip-text text-transparent bg-linear-to-b">
+                AI 艺术图库
+              </h1>
+              <p className="text-lg text-default-600 max-w-3xl mx-auto">
+                探索令人惊叹的 AI
+                生成图像，並发掘其背后的提示词。获取灵感，创造您自己的杰作。
+              </p>
+            </motion.div>
 
-        {/* 瀑布流图片区域 */}
-        {images.length > 0 && (
-          <Masonry
-            breakpointCols={breakpointColumns}
-            className="flex -ml-4 w-auto"
-            columnClassName="pl-4 bg-clip-padding"
-          >
-            {images.map((image) => (
-              <ImageCard
-                key={image.id}
-                image={image}
-                onPreview={handlePreview}
-              />
-            ))}
-          </Masonry>
-        )}
+            {/* 瀑布流图片区域 */}
+            {images.length > 0 && (
+              <Masonry
+                breakpointCols={breakpointColumns}
+                className="flex -ml-4 w-auto"
+                columnClassName="pl-4 bg-clip-padding"
+              >
+                {images.map((image) => (
+                  <ImageCard
+                    key={image.id}
+                    image={image}
+                    onPreview={handlePreview}
+                  />
+                ))}
+              </Masonry>
+            )}
 
-        {/* 加载状态 */}
-        {loading && (
-          <div className="flex justify-center py-8">
-            <Spinner size="lg" />
-          </div>
-        )}
+            {/* 加载状态 */}
+            {loading && (
+              <div className="flex justify-center py-8">
+                <Spinner size="lg" />
+              </div>
+            )}
 
-        {/* 没有更多数据提示 */}
-        {!hasMore && images.length > 0 && (
-          <div className="text-center py-8 text-default-500">
-            沒有更多图片了
-          </div>
-        )}
+            {/* 没有更多数据提示 */}
+            {!hasMore && images.length > 0 && (
+              <div className="text-center py-8 text-default-500">
+                沒有更多图片了
+              </div>
+            )}
 
-        {/* 空状态 */}
-        {!loading && images.length === 0 && (
-          <div className="text-center py-16 text-default-500">暂无图片数据</div>
-        )}
+            {/* 空状态 */}
+            {!loading && images.length === 0 && (
+              <div className="text-center py-16 text-default-500">
+                暂无图片数据
+              </div>
+            )}
 
-        {/* 滚动观察器 */}
-        <div ref={observerRef} className="h-1" />
+            {/* 滚动观察器 */}
+            <div ref={observerRef} className="h-1" />
           </div>
         </div>
       </div>
@@ -448,4 +462,3 @@ export default function GalleryPage() {
     </DefaultLayout>
   );
 }
-

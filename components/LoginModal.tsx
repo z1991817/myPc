@@ -114,7 +114,8 @@ export default function LoginModal({
         });
       }, 1000);
     } catch (err: any) {
-      const message = err?.response?.data?.message || "验证码发送失败，请稍后重试";
+      const message =
+        err?.response?.data?.message || "验证码发送失败，请稍后重试";
 
       setError(message);
       addToast({ title: message, color: "danger" });
@@ -323,9 +324,9 @@ export default function LoginModal({
                         ? "bg-primary text-white"
                         : "text-white/40 bg-transparent"
                     }`}
-                      isDisabled={!isEmailValid || countdown > 0 || isSendingCode}
-                      isLoading={isSendingCode}
-                      size="sm"
+                    isDisabled={!isEmailValid || countdown > 0 || isSendingCode}
+                    isLoading={isSendingCode}
+                    size="sm"
                     variant={
                       isEmailValid && countdown === 0 ? "solid" : "light"
                     }

@@ -47,12 +47,7 @@ const pageSeoByPathname: Record<string, SeoMeta> = {
     title: "价格方案",
     description:
       "查看 ArtImg Nano Banana 2 的价格方案、积分权益与商用能力，选择适合个人创作、团队出图和高频批量生产的套餐。",
-    keywords: [
-      "AI图片生成价格",
-      "AI绘图套餐",
-      "AI生成积分",
-      "商业AI绘图方案",
-    ],
+    keywords: ["AI图片生成价格", "AI绘图套餐", "AI生成积分", "商业AI绘图方案"],
     canonicalPath: "/pricing",
   },
   "/about": {
@@ -71,12 +66,7 @@ const pageSeoByPathname: Record<string, SeoMeta> = {
     title: "AI 图像生成博客",
     description:
       "阅读 ArtImg AI 图像生成博客，获取提示词技巧、角色一致性工作流、商业设计案例、AI 出图策略与实战教程。",
-    keywords: [
-      "AI绘图教程",
-      "AI图片生成博客",
-      "提示词技巧",
-      "角色一致性教程",
-    ],
+    keywords: ["AI绘图教程", "AI图片生成博客", "提示词技巧", "角色一致性教程"],
     canonicalPath: "/blog",
   },
   "/login": {
@@ -191,8 +181,3 @@ export function getIndexableSitemapEntries() {
     priority: path === "/" ? "1.0" : path === "/pricing" ? "0.9" : "0.8",
   }));
 }
-
-
-
-
-

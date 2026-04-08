@@ -943,4 +943,3 @@ export default function CheckoutPage() {
     </DefaultLayout>
   );
 }
-

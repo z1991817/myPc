@@ -38,6 +38,7 @@ import Footer from "@/components/Footer";
 import { Head } from "@/layouts/head";
 import { useUserStore } from "@/store/useUserStore";
 import { refreshCurrentUser } from "@/api/auth";
+import { normalizeImageURL } from "@/lib/image-base-url";
 
 /**
  * 从markdown内容中提取图片URL
@@ -301,6 +302,7 @@ const CreateNew: React.FC = () => {
     if (!hydrated) return;
     if (hydrated && !token) {
       onLoginOpen();
+
       return;
     }
 
@@ -344,12 +346,10 @@ const CreateNew: React.FC = () => {
             inputImageUrls,
           );
 
-          console.log("Nano Banana 图生图接口返回数据:", response);
-
           if (response.success && response.data?.cosUrl) {
             const newImage: GeneratedImage = {
               id: `${Date.now()}-0`,
-              url: response.data.cosUrl,
+              url: normalizeImageURL(response.data.cosUrl),
               prompt: prompt,
               isLoaded: false,
             };
@@ -376,8 +376,6 @@ const CreateNew: React.FC = () => {
             sizeValue,
           );
 
-          console.log("图生图接口返回数据:", response);
-
           // 从返回的data.thirdPartyResponse.content中提取图片URL
           if (
             !response.success ||
@@ -393,8 +391,6 @@ const CreateNew: React.FC = () => {
           const content =
             response.data.thirdPartyResponse.choices[0].message.content;
           const extractedImageUrls = extractImageUrls(content);
-
-          console.log("提取的图片URLs:", extractedImageUrls);
 
           if (extractedImageUrls.length > 0) {
             const newImages: GeneratedImage[] = extractedImageUrls.map(
@@ -436,12 +432,10 @@ const CreateNew: React.FC = () => {
             "text-to-image",
           );
 
-          console.log("Nano Banana 接口返回数据:", response);
-
           if (response.success && response.data?.cosUrl) {
             const newImage: GeneratedImage = {
               id: `${Date.now()}-0`,
-              url: response.data.cosUrl,
+              url: normalizeImageURL(response.data.cosUrl),
               prompt: prompt,
               isLoaded: false,
             };

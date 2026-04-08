@@ -1,9 +1,16 @@
+import type { GetStaticProps, InferGetStaticPropsType } from "next";
+import type {
+  FaqItemData,
+  PricingPlanData,
+  TechPillarData,
+  TechPillarIconKey,
+} from "@/data/homepage-content";
+
 import { useEffect, useRef, useState } from "react";
 import NextLink from "next/link";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter } from "next/router";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
-import Masonry from "react-masonry-css";
 import { motion, animate, useInView, useReducedMotion } from "framer-motion";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
@@ -22,7 +29,6 @@ import {
   Palette,
   Zap,
   Maximize2,
-  Image as ImageLucide,
   Check,
   Gift,
   Rocket,
@@ -30,11 +36,25 @@ import {
 
 import DefaultLayout from "@/layouts/default";
 import { getGalleryList, GalleryImageItem } from "@/api/gallery";
-import { getTestApi } from "@/api/test";
+import { normalizeImageURL } from "@/lib/image-base-url";
 import Aurora from "@/components/Aurora";
 import TopNavbar from "@/components/TopNavbar";
 import { useLoginModalStore } from "@/store/useLoginModalStore";
 import { useUserStore } from "@/store/useUserStore";
+
+const ShowcaseSwiperBlock = dynamic(
+  () => import("@/components/home/ShowcaseSwiperBlock"),
+  {
+    ssr: false,
+  },
+);
+
+const GalleryMasonryBlock = dynamic(
+  () => import("@/components/home/GalleryMasonryBlock"),
+  {
+    ssr: false,
+  },
+);
 
 /* ============================
    类型定义
@@ -126,244 +146,18 @@ const landingNavItems = [
   { label: "常见问题", href: "#faq" },
 ];
 
-/** 第二屏对比轮播数据，补充更饱满的文案 */
-const compareSlides: CompareSlide[] = [
-  {
-    id: 1,
-    title: "疯狂动物城自拍",
-    tag: "Portrait Workflow",
-    description:
-      "创作一张超逼真的自拍照片。请使用上传的图片作为人物参考——请勿修改、更改或调整上传图片中人物的任何面部特征、发型、服装或配饰。将《疯狂动物城》中的朱迪·霍普斯（迪士尼角色）添加到真人旁边。场景：一间昏暗拥挤的电影院。背景中巨大的银幕正在播放《疯狂动物城》的片段。采用电影灯光，营造温暖的氛围光。构图：自拍角度。图片 1 中的真人（请完全保留所有原始特征）正在与朱迪·霍普斯一起自拍。[在此描述姿势/动作]。两人都清晰对焦。采用超高清 8K 画质，超逼真的摄影风格，自​​然光与屏幕光晕混合，浅景深。重要提示：人物必须与上传的参考图片完全一致——发型、服装、配饰或面部细节均不得更改。唯一添加的元素应该是自然融入场景的《疯狂动物城》角色。",
-    detail:
-      "这类合影创作特别适合角色联动、IP 共创和社媒传播。原图人物保持身份一致，AI 负责把角色、灯光和环境自然拼接进同一画面里。",
-    bullets: [
-      "人物身份与原图保持一致",
-      "支持角色植入与场景氛围融合",
-      "适合社媒传播、创意海报和活动内容",
-    ],
-    beforeImage:
-      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/input1.jpg",
-    afterImage:
-      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/out1.jfif",
-    beforeLabel: "原始照片",
-    afterLabel: "AI 精修后",
-  },
-  {
-    id: 3,
-    title: "风景增强与氛围重建",
-    tag: "Landscape Upgrade",
-    description:
-      "面对光线平淡、层次不足的原始风景照，Nano Banana 2 可以自动识别天空、地貌、植被和远近景关系，重建更有电影感的氛围光与空间层次，让作品更像真正完成调色与后期的摄影成片。",
-    detail:
-      "特别适合旅游内容、壁纸素材、品牌视觉和宣传页面。你可以保留原始构图，仅提升色彩与情绪，也可以继续叠加风格指令，让一张照片拥有完全不同的视觉表达。",
-    bullets: [
-      "增强天空层次与环境色彩细节",
-      "提升画面纵深感与电影氛围",
-      "适合旅游海报、品牌背景与壁纸素材",
-    ],
-    beforeImage:
-      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/input2.png",
-    afterImage:
-      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/out2.jfif",
-    beforeLabel: "原始风景",
-    afterLabel: "氛围增强后",
-  },
-  {
-    id: 4,
-    title: "老照片修复与记忆重现",
-    tag: "Restoration",
-    description:
-      "Nano Banana 2 可识别泛黄、模糊、划痕和局部缺失等问题，通过 AI 修复与智能补全恢复人物轮廓、服装细节和画面清晰度，让珍贵的家庭记忆与历史影像重新焕发可用价值。",
-    detail:
-      "在处理过程中，它会尽量保留年代质感，同时提升可读性与观感。对于需要展示、印刷或数字存档的老照片，这种能力能大幅降低人工修图成本。",
-    bullets: [
-      "修复模糊、划痕与泛黄老旧痕迹",
-      "还原人物轮廓与服装面部细节",
-      "适合纪念册、展览与数字化存档",
-    ],
-    beforeImage:
-      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/input3.webp",
-    afterImage:
-      "https://mycloudzcq-1300106439.cos.ap-singapore.myqcloud.com/home/out3.webp",
-    beforeLabel: "旧照片",
-    afterLabel: "修复后",
-  },
-];
-
-/** 第三屏技术支柱数据，使用用户提供文案并做左右交替布局 */
-const techPillars: TechPillar[] = [
-  {
-    id: 1,
-    title: "99%+文字渲染准确率",
-    description:
-      "Nano Banana 2 是业界最精准的图内文字引擎。30+语言完美生成海报、产品标签和品牌视觉，多行排版完美无缺，无需手动修图。",
-    bullets: [
-      "30+语言 99%+ 准确率",
-      "密集多行排版支持",
-      "中日韩、阿拉伯文及特殊字符",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1400&q=80",
-    reverse: false,
-    icon: <Sparkles size={20} />,
-  },
-  {
-    id: 2,
-    title: "跨图像身份一致性",
-    description:
-      "Nano Banana 2 的跨图像语义对齐架构，在不同场景、角度和光照下保持面部、服装和产品细节像素级一致。同时追踪 5 个角色，批量生成中保持 90%+ 一致性。",
-    bullets: [
-      "14 张参考图，5 个角色",
-      "90%+ 批量一致性（大批量）",
-      "98.7% 面部身份保持",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
-    reverse: true,
-    icon: <Palette size={20} />,
-  },
-  {
-    id: 3,
-    title: "多图智能融合",
-    description:
-      "上传最多 14 张参考图，Nano Banana 2 智能融合主体、风格和构图。轻松创建分镜、产品系列图和一致性角色序列。",
-    bullets: ["支持最多 14 张参考图", "跨图像语义对齐", "分镜与序列化生成"],
-    image:
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1400&q=80",
-    reverse: false,
-    icon: <Maximize2 size={20} />,
-  },
-  {
-    id: 4,
-    title: "原生 4K 生产流水线",
-    description:
-      "Nano Banana 2 直接以 4096×4096 分辨率生成，无放大伪影。内置 Canny、深度和蒙版控制，高效快速处理流程优化。",
-    bullets: [
-      "真 4K，无需后期处理",
-      "内置 Canny / 深度 / 蒙版控制",
-      "高效快速生成，批量最多 15 张",
-    ],
-    image:
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80",
-    reverse: true,
-    icon: <Zap size={20} />,
-  },
-];
-
-/** 第五屏定价数据 */
-const pricingPlans: PricingPlan[] = [
-  {
-    id: 1,
-    name: "尝鲜破冰包",
-    price: "¥9.9",
-    period: "",
-    description: "一杯瑞幸的钱，告别找图烦恼",
-    features: [
-      "获得 1,000 积分",
-      "约可生成 20 张 Banana2 顶级图像",
-      "或 50 张基础图像",
-      "无水印下载",
-    ],
-    isPopular: false,
-    ctaText: "立即尝鲜",
-    ctaHref: "/checkout",
-  },
-  {
-    id: 2,
-    name: "专业创作者包",
-    price: "¥39.9",
-    period: "",
-    description: "单张神图低至 0.44 元，实现配图自由",
-    features: [
-      "获得 4,500 积分（额外赠送 500 分！）",
-      "约可生成 90 张 Banana2 顶级图像",
-      "优先排队出图特权",
-      "无水印下载",
-      "商业使用许可",
-    ],
-    isPopular: true,
-    ctaText: "获取最高性价比",
-    ctaHref: "/checkout",
-  },
-  {
-    id: 3,
-    name: "创世合伙人卡",
-    price: "¥99",
-    period: "",
-    description: "一次投资，锁定早期红利",
-    features: [
-      "一次性获得 15,000 积分",
-      "优先排队出图特权",
-      "无水印下载",
-      "商业使用许可",
-      "优先技术支持",
-    ],
-    isPopular: false,
-    ctaText: "立即购买",
-    ctaHref: "/checkout",
-  },
-];
-
-/** 第六屏 FAQ 数据 */
-const faqItems: FaqItem[] = [
-  {
-    key: "1",
-    question: "Nano Banana 支持哪些图像尺寸？",
-    answer:
-      "支持从 512×512 到 2048×2048 的多种标准尺寸，包括 1:1、4:3、16:9、9:16 等常见比例。专业版和企业版用户还可使用自定义尺寸。",
-  },
-  {
-    key: "2",
-    question: "生成的图片可以商用吗？",
-    answer:
-      "专业版和企业版用户享有完整的商业使用许可，生成的所有图片均可用于商业项目，包括但不限于广告、产品包装、网站设计和社交媒体内容。",
-  },
-  {
-    key: "3",
-    question: "文生图和图生图有什么区别？",
-    answer:
-      "文生图是通过文字描述从零开始生成全新图片；图生图则是在已有图片的基础上，根据文字提示进行风格转换、内容修改或增强处理。两者可以结合使用，先用文生图创建基础图像，再用图生图进行精细调整。",
-  },
-  {
-    key: "4",
-    question: "免费版有使用限制吗？",
-    answer:
-      "免费版每日可使用 5 次图像生成，支持基础模型和标准分辨率输出。每日额度在北京时间 0:00 重置。升级到专业版可获得 1000 点数/月的大容量额度。",
-  },
-  {
-    key: "5",
-    question: "如何提升生成图片的质量？",
-    answer:
-      "建议使用详细具体的提示词，包含主体描述、风格关键词、光影氛围和画面构图等信息。例如，'一只橘猫坐在窗台上，柔和的午后阳光，电影感色调，浅景深' 比 '猫' 能产出更好的效果。",
-  },
-  {
-    key: "6",
-    question: "支持批量生成吗？",
-    answer:
-      "企业版支持通过 API 进行批量生成，可以在一次请求中提交多个生成任务。我们还提供 SDK 和详细的 API 文档，方便集成到你的工作流程中。",
-  },
-];
-
-/** 画廊瀑布流断点 */
-const masonryBreakpoints: Record<string, number> = {
-  default: 4,
-  1280: 4,
-  1024: 3,
-  768: 2,
-  640: 1,
+type IndexPageProps = {
+  techPillarsData: TechPillarData[];
+  pricingPlans: PricingPlanData[];
+  faqItems: FaqItemData[];
 };
 
-const mobileGalleryPreviewCount = 4;
-const gallerySkeletonHeights = [
-  "h-[280px]",
-  "h-[360px]",
-  "h-[320px]",
-  "h-[420px]",
-  "h-[300px]",
-  "h-[380px]",
-  "h-[340px]",
-  "h-[400px]",
-];
+const techPillarIconMap: Record<TechPillarIconKey, React.ReactNode> = {
+  sparkles: <Sparkles size={20} />,
+  palette: <Palette size={20} />,
+  maximize2: <Maximize2 size={20} />,
+  zap: <Zap size={20} />,
+};
 
 /* ============================
    动画与工具函数
@@ -477,7 +271,11 @@ function CheckIcon() {
    页面主组件
    ============================ */
 
-export default function IndexNewPage() {
+export default function IndexNewPage({
+  techPillarsData,
+  pricingPlans,
+  faqItems,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const router = useRouter();
   const token = useUserStore((state) => state.token);
   const openLoginModal = useLoginModalStore((state) => state.openModal);
@@ -487,6 +285,11 @@ export default function IndexNewPage() {
   /** 画廊数据状态 */
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
+
+  const techPillars: TechPillar[] = techPillarsData.map((pillar) => ({
+    ...pillar,
+    icon: techPillarIconMap[pillar.icon],
+  }));
 
   const handleCloseAnnouncement = () => {
     setIsAnnouncementOpen(false);
@@ -504,7 +307,12 @@ export default function IndexNewPage() {
         const res = await getGalleryList(1, 12);
 
         if (res.code === 200 && res.data?.list) {
-          setGalleryImages(res.data.list);
+          const normalizedGalleryImages = res.data.list.map((item) => ({
+            ...item,
+            cos_url: normalizeImageURL(item.cos_url),
+          }));
+
+          setGalleryImages(normalizedGalleryImages);
         }
       } catch (error) {
         console.error("画廊数据加载失败:", error);
@@ -588,7 +396,8 @@ export default function IndexNewPage() {
                     积分
                   </p>
                   <p className="mt-4 text-sm leading-7 text-white/68">
-                    现在注册即可领取新站专属积分，直接开始体验 AI 图片生成、修图和创作流程。
+                    现在注册即可领取新站专属积分，直接开始体验 AI
+                    图片生成、修图和创作流程。
                   </p>
                 </div>
               </ModalBody>
@@ -677,24 +486,6 @@ export default function IndexNewPage() {
                 >
                   浏览画廊
                 </Button>
-                {/* <Button
-                  className="border-white/20 px-8 text-base text-white/80 hover:bg-white/5"
-                  radius="full"
-                  size="lg"
-                  variant="bordered"
-                  onPress={async () => {
-                    try {
-                      const data = await getTestApi();
-                      console.log("测试接口返回:", data);
-                      alert("测试接口调用成功");
-                    } catch (error) {
-                      console.error("测试接口调用失败:", error);
-                      alert("测试接口调用失败");
-                    }
-                  }}
-                >
-                  测试接口
-                </Button> */}
               </div>
             </Reveal>
 
@@ -732,85 +523,8 @@ export default function IndexNewPage() {
             </Reveal>
 
             <Reveal delay={0.08}>
-              <Swiper
-                loop
-                autoplay={{ delay: 886500, disableOnInteraction: false }}
-                modules={[Autoplay, Pagination]}
-                pagination={{
-                  clickable: true,
-                  el: ".compare-pagination",
-                }}
-                slidesPerView={1}
-                spaceBetween={40}
-                speed={850}
-              >
-                {compareSlides.map((slide) => (
-                  <SwiperSlide key={slide.id}>
-                    <Card className="overflow-hidden border border-white/8 bg-white/[0.03] shadow-2xl shadow-black/25">
-                      <CardBody className="p-5 md:p-8">
-                        <div className="grid gap-6">
-                          {/* 图片区域 */}
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a1324]">
-                              <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
-                                {slide.beforeLabel}
-                              </div>
-                              <img
-                                alt={`${slide.title} - 处理前`}
-                                className="w-full h-full object-contain max-h-[400px] md:max-h-[500px] transition-opacity duration-300 opacity-100"
-                                src={slide.beforeImage}
-                              />
-                            </div>
-
-                            <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a1324]">
-                              <div className="pointer-events-none absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
-                                {slide.afterLabel}
-                              </div>
-                              <img
-                                alt={`${slide.title} - 处理后`}
-                                className="w-full h-full object-contain max-h-[400px] md:max-h-[500px] transition-opacity duration-300 opacity-100"
-                                src={slide.afterImage}
-                              />
-                            </div>
-                          </div>
-
-                          {/* 文字区域 */}
-                          <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-                           <Chip
-                             className="mb-4 border border-blue-500/30 bg-blue-500/10 text-xs text-blue-300"
-                             radius="full"
-                             variant="flat"
-                          >
-                            {slide.tag}
-                          </Chip>
-
-                            <h3 className="mb-4 text-2xl font-bold text-white sm:text-3xl line-clamp-1">
-                              {slide.title}
-                            </h3>
-
-                            <p className="mb-4 text-base leading-8 text-white/62 line-clamp-2">
-                              {slide.description}
-                            </p>
-                            <Button
-                              as={NextLink}
-                              className="border-white/15 text-white/75 hover:bg-white/5"
-                              href="/createNew"
-                              radius="full"
-                              size="md"
-                              variant="bordered"
-                            >
-                              立即体验
-                            </Button>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
+              <ShowcaseSwiperBlock />
             </Reveal>
-
-            <div className="compare-pagination" />
           </div>
         </section>
 
@@ -887,11 +601,14 @@ export default function IndexNewPage() {
                           }
                         >
                           <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5">
-                            <img
+                            <Image
                               alt={pillar.title}
                               className="h-[280px] w-full object-cover md:h-[360px] lg:h-[420px]"
+                              height={840}
                               loading="lazy"
+                              sizes="(max-width: 1024px) 100vw, 50vw"
                               src={pillar.image}
+                              width={1400}
                             />
                             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/55 to-transparent" />
                           </div>
@@ -921,82 +638,13 @@ export default function IndexNewPage() {
               />
             </Reveal>
 
-            {galleryLoading ? (
-              <Reveal delay={0.06}>
-                <Masonry
-                  breakpointCols={masonryBreakpoints}
-                  className="new-masonry-grid"
-                  columnClassName="new-masonry-grid_column"
-                >
-                  {gallerySkeletonHeights.map((heightClass, index) => (
-                    <div
-                      key={`gallery-skeleton-${index}`}
-                      className={`${index >= mobileGalleryPreviewCount ? "hidden md:block " : ""}mb-4`}
-                    >
-                      <Card className="overflow-hidden border border-white/5 bg-white/5">
-                        <CardBody className="p-0">
-                          <div
-                            className={`relative ${heightClass} overflow-hidden bg-white/[0.03]`}
-                          >
-                            <div className="absolute inset-0 animate-pulse bg-[linear-gradient(135deg,rgba(59,130,246,0.12),rgba(168,85,247,0.12),rgba(255,255,255,0.04))]" />
-                          </div>
-                          <div className="space-y-2 p-4">
-                            <div className="h-3 w-5/6 animate-pulse rounded-full bg-white/10" />
-                            <div className="h-3 w-2/3 animate-pulse rounded-full bg-white/6" />
-                          </div>
-                        </CardBody>
-                      </Card>
-                    </div>
-                  ))}
-                </Masonry>
-              </Reveal>
-            ) : galleryImages.length > 0 ? (
-              <Reveal delay={0.06}>
-                <Masonry
-                  breakpointCols={masonryBreakpoints}
-                  className="new-masonry-grid"
-                  columnClassName="new-masonry-grid_column"
-                >
-                  {galleryImages.map((image, index) => (
-                    <motion.div
-                      key={image.id}
-                      className={`${index >= mobileGalleryPreviewCount ? "hidden md:block " : ""}group mb-4 cursor-pointer`}
-                      initial={{ opacity: 0, y: 24 }}
-                      transition={{
-                        duration: 0.45,
-                        delay: Math.min(index * 0.03, 0.24),
-                      }}
-                      viewport={{ once: true, amount: 0.2 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      onClick={() => router.push("/gallery")}
-                    >
-                      <Card className="overflow-hidden border border-white/5 bg-white/5 transition-all duration-300 hover:border-white/15 hover:shadow-xl">
-                        <CardBody className="p-0">
-                          <div className="relative overflow-hidden">
-                            <img
-                              alt={image.prompt || "AI 生成图片"}
-                              className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              loading="lazy"
-                              src={image.cos_url}
-                            />
-                            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                              <p className="line-clamp-3 text-xs leading-6 text-white/90">
-                                {image.prompt}
-                              </p>
-                            </div>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </Masonry>
-              </Reveal>
-            ) : (
-              <div className="py-20 text-center text-white/40">
-                <ImageLucide className="mx-auto" size={48} />
-                <p className="mt-4">暂无画廊数据</p>
-              </div>
-            )}
+            {/* 动态分包：瀑布流区块 */}
+            <Reveal delay={0.06}>
+              <GalleryMasonryBlock
+                galleryImages={galleryImages}
+                galleryLoading={galleryLoading}
+              />
+            </Reveal>
 
             <Reveal className="mt-12 text-center" delay={0.1}>
               <Button
@@ -1219,3 +867,17 @@ export default function IndexNewPage() {
     </DefaultLayout>
   );
 }
+
+export const getStaticProps: GetStaticProps<IndexPageProps> = async () => {
+  const { techPillarsData, pricingPlansData, faqItemsData } = await import(
+    "@/data/homepage-content"
+  );
+
+  return {
+    props: {
+      techPillarsData,
+      pricingPlans: pricingPlansData,
+      faqItems: faqItemsData,
+    },
+  };
+};

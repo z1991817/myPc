@@ -4,6 +4,7 @@ import { Skeleton } from "@heroui/skeleton";
 import { Spinner } from "@heroui/spinner";
 import { addToast } from "@heroui/toast";
 import { Button } from "@heroui/button";
+import Image from "next/image";
 import { useRouter } from "next/router";
 
 import DefaultLayout from "@/layouts/default";
@@ -19,6 +20,7 @@ import {
   DeleteIcon,
 } from "@/components/icons";
 import TopNavbar from "@/components/TopNavbar";
+import { normalizeImageURL } from "@/lib/image-base-url";
 import { useUserStore } from "@/store/useUserStore";
 
 /** 按钮通用样式 */
@@ -161,11 +163,13 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
               <Skeleton className="absolute inset-0 w-full h-full" />
             )}
             {isVisible && (
-              <img
+              <Image
+                fill
                 alt={item.prompt}
                 className={`w-full h-full object-cover transition-transform duration-300 hover:scale-110 ${
                   isLoaded ? "opacity-100" : "opacity-0"
                 }`}
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                 src={item.cos_url}
                 onLoad={() => setIsLoaded(true)}
               />
@@ -236,13 +240,27 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
       {/* 删除确认弹窗 - 自定义覆盖层，避免 Modal 锁定滚动导致页面跳顶 */}
       {isDeleteModalOpen && (
         <div
+          aria-label="关闭删除确认弹窗"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setIsDeleteModalOpen(false)}
+          role="button"
+          tabIndex={0}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsDeleteModalOpen(false);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (
+              event.key === "Escape" ||
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              setIsDeleteModalOpen(false);
+            }
+          }}
         >
-          <div
-            className="mx-4 w-full max-w-sm rounded-xl bg-content1 p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="mx-4 w-full max-w-sm rounded-xl bg-content1 p-6 shadow-2xl">
             <h3 className="text-lg font-semibold">确认删除</h3>
             <p className="mt-3 text-sm text-default-600">
               确定要删除这条创作记录吗？此操作不可撤销。
@@ -292,8 +310,13 @@ export default function MyCreationsPage() {
       const res = await getMyCreations(pageNum, 12);
 
       if (res.code === 200 || res.code === 0) {
+        const normalizedList = res.data.list.map((item) => ({
+          ...item,
+          cos_url: normalizeImageURL(item.cos_url),
+        }));
+
         setList((prev) =>
-          pageNum === 1 ? res.data.list : [...prev, ...res.data.list],
+          pageNum === 1 ? normalizedList : [...prev, ...normalizedList],
         );
         setTotalPages(res.data.pagination.totalPages);
         setPage(pageNum);
@@ -404,7 +427,7 @@ export default function MyCreationsPage() {
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-white">我的创作</h1>
               <p className="mt-2 text-white">
-                管理和檢視您所有已生成的影片和圖片
+                管理和查看您所有生成的视频和图片
               </p>
             </div>
 
@@ -473,4 +496,3 @@ export default function MyCreationsPage() {
     </DefaultLayout>
   );
 }
-

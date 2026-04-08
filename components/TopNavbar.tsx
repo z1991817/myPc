@@ -117,14 +117,14 @@ const TopNavbar: React.FC = () => {
             >
               <div className="flex ">
                 <img
-                    alt="ArtImg logo candidate"
-                    className="h-11 w-11 rounded-2xl "
-                    src="/image/artimg-icon.svg"
-                  />
+                  alt="ArtImg logo candidate"
+                  className="h-11 w-11 rounded-2xl "
+                  src="/image/artimg-icon.svg"
+                />
                 {/* <div className="hidden h-7 w-px bg-white/10 sm:block" />
                 <div className="relative hidden sm:block"> */}
-                  
-                  {/* <span className="absolute -right-1.5 -top-1.5 rounded-full border border-sky-300/30 bg-[#08111f] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-sky-200">
+
+                {/* <span className="absolute -right-1.5 -top-1.5 rounded-full border border-sky-300/30 bg-[#08111f] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-sky-200">
                     New
                   </span> */}
                 {/* </div> */}
