@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -oP '.{0,80}claude\\\\.artimg\\\\.top.{0,80}' .next/static/chunks/pages/gallery-d72c865d44c0b070.js)",
+      "Bash(python3 -c ':*)"
+    ]
+  }
+}

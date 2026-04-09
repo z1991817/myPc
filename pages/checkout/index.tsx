@@ -908,6 +908,8 @@ export default function CheckoutPage() {
                 <div className="mx-auto flex aspect-square w-full max-w-[240px] items-center justify-center rounded-[1.75rem] bg-[linear-gradient(135deg,#f8fafc_0%,#dbeafe_100%)] text-slate-900">
                   <div className="flex h-[78%] w-[78%] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white p-4">
                     {qrCodeDataUrl ? (
+                      // 二维码为运行时 data URL，保留原生 img 以避免 next/image 额外限制。
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         alt={COPY.qrAlt}
                         className="h-full w-full rounded-[1rem] object-contain"

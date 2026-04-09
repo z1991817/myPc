@@ -364,10 +364,13 @@ export default function GalleryPage() {
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* 左侧图片 */}
                     <div className="flex-1 flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
-                      <img
+                      <Image
                         alt={selectedImage.prompt}
                         className="max-w-full max-h-[600px] object-contain"
+                        height={1200}
+                        sizes="(max-width: 768px) 100vw, 60vw"
                         src={selectedImage.cos_url}
+                        width={1200}
                       />
                     </div>
 

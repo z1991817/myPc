@@ -1,11 +1,11 @@
+import type { GalleryImageItem } from "@/api/gallery";
+
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Masonry from "react-masonry-css";
 import { Card, CardBody } from "@heroui/card";
 import { Image as ImageLucide } from "lucide-react";
-
-import type { GalleryImageItem } from "@/api/gallery";
 
 interface GalleryMasonryBlockProps {
   galleryLoading: boolean;

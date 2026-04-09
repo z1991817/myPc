@@ -5,6 +5,7 @@ import { Autoplay, Pagination } from "swiper/modules";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
+import { useCallback, useState } from "react";
 
 interface CompareSlideItem {
   id: number;
@@ -60,11 +61,33 @@ const compareSlides: CompareSlideItem[] = [
 ];
 
 export default function ShowcaseSwiperBlock() {
+  const [loadedSlideIds, setLoadedSlideIds] = useState<Set<number>>(
+    () => new Set([compareSlides[0]?.id]),
+  );
+
+  const markSlideAsLoaded = useCallback((index: number) => {
+    const targetSlideId = compareSlides[index]?.id;
+
+    if (!targetSlideId) {
+      return;
+    }
+
+    setLoadedSlideIds((prev) => {
+      if (prev.has(targetSlideId)) {
+        return prev;
+      }
+
+      const next = new Set(prev).add(targetSlideId);
+
+      return next;
+    });
+  }, []);
+
   return (
     <>
       <Swiper
-        autoplay={{ delay: 886500, disableOnInteraction: false }}
         loop
+        autoplay={{ delay: 886500, disableOnInteraction: false }}
         modules={[Autoplay, Pagination]}
         pagination={{
           clickable: true,
@@ -73,8 +96,11 @@ export default function ShowcaseSwiperBlock() {
         slidesPerView={1}
         spaceBetween={40}
         speed={850}
+        onSlideChange={(swiper) => {
+          markSlideAsLoaded(swiper.realIndex);
+        }}
       >
-        {compareSlides.map((slide) => (
+        {compareSlides.map((slide, index) => (
           <SwiperSlide key={slide.id}>
             <Card className="overflow-hidden border border-white/8 bg-white/[0.03] shadow-2xl shadow-black/25">
               <CardBody className="p-5 md:p-8">
@@ -84,28 +110,42 @@ export default function ShowcaseSwiperBlock() {
                       <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
                         {slide.beforeLabel}
                       </div>
-                      <Image
-                        alt={`${slide.title} - 处理前`}
-                        className="h-full w-full object-contain max-h-[400px] transition-opacity duration-300 opacity-100 md:max-h-[500px]"
-                        height={900}
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        src={slide.beforeImage}
-                        width={1400}
-                      />
+                      {loadedSlideIds.has(slide.id) ? (
+                        <Image
+                          alt={`${slide.title} - 处理前`}
+                          className="h-full w-full object-contain max-h-[400px] transition-opacity duration-300 opacity-100 md:max-h-[500px]"
+                          decoding="async"
+                          fetchPriority={index === 0 ? "high" : "auto"}
+                          height={900}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          src={slide.beforeImage}
+                          width={1400}
+                        />
+                      ) : (
+                        <div className="h-[400px] w-full bg-gradient-to-br from-white/5 via-white/[0.03] to-transparent md:h-[500px]" />
+                      )}
                     </div>
 
                     <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0a1324]">
                       <div className="pointer-events-none absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs text-white/80 backdrop-blur-sm">
                         {slide.afterLabel}
                       </div>
-                      <Image
-                        alt={`${slide.title} - 处理后`}
-                        className="h-full w-full object-contain max-h-[400px] transition-opacity duration-300 opacity-100 md:max-h-[500px]"
-                        height={900}
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        src={slide.afterImage}
-                        width={1400}
-                      />
+                      {loadedSlideIds.has(slide.id) ? (
+                        <Image
+                          alt={`${slide.title} - 处理后`}
+                          className="h-full w-full object-contain max-h-[400px] transition-opacity duration-300 opacity-100 md:max-h-[500px]"
+                          decoding="async"
+                          fetchPriority={index === 0 ? "high" : "auto"}
+                          height={900}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          src={slide.afterImage}
+                          width={1400}
+                        />
+                      ) : (
+                        <div className="h-[400px] w-full bg-gradient-to-br from-white/5 via-white/[0.03] to-transparent md:h-[500px]" />
+                      )}
                     </div>
                   </div>
 

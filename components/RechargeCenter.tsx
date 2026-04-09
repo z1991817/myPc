@@ -280,6 +280,7 @@ export default function RechargeCenter() {
     setPayingOrderId(orderId);
     try {
       const response = await mockPayRechargeOrder(orderId);
+
       await refreshCurrentUser({ silent: true });
 
       addToast({

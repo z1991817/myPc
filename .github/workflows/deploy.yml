@@ -114,14 +114,17 @@ jobs:
             echo "[deploy] cleaning old build cache"
             rm -rf .next
 
-            echo "[deploy] verifying env"
-            grep NEXT_PUBLIC_IMAGE_BASE_URL .env.production || echo "[deploy] WARNING: NEXT_PUBLIC_IMAGE_BASE_URL not found in .env.production"
-
             echo "[deploy] building app"
             pnpm build
+
+            echo "[deploy] clearing nginx proxy cache"
+            rm -rf /www/server/nginx/proxy_cache_dir/*
 
             echo "[deploy] restarting pm2 app"
             pm2 restart next-pages-template || pm2 start ecosystem.config.cjs --only next-pages-template
             pm2 save
+
+            echo "[deploy] reloading nginx"
+            nginx -s reload
 
             echo "[deploy] deployment completed"

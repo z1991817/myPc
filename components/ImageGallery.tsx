@@ -10,11 +10,6 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ images }: ImageGalleryProps) {
   const [index, setIndex] = useState(-1);
-  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
-
-  const handleImageLoad = (i: number) => {
-    setLoadedImages((prev) => new Set(prev).add(i));
-  };
 
   const breakpoints = {
     default: 4,
@@ -39,7 +34,6 @@ export default function ImageGallery({ images }: ImageGalleryProps) {
               loading="lazy"
               src={img.src}
               onClick={() => setIndex(i)}
-              onLoad={() => handleImageLoad(i)}
             />
           </div>
         ))}

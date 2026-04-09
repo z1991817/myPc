@@ -1,6 +1,8 @@
 import type { ModelItem } from "@/api/images";
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import Image from "next/image";
+import NextHead from "next/head";
 import { Button } from "@heroui/button";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Select, SelectItem } from "@heroui/select";
@@ -30,6 +32,8 @@ import {
   uploadImage,
   imageToImage,
   bananaCreateImage,
+  bananaQueryImage,
+  queryTextToImageTask,
   getModels,
 } from "@/api/images";
 import LoginModal from "@/components/LoginModal";
@@ -117,9 +121,12 @@ type TabType = "text-to-image" | "image-to-image";
 interface GeneratedImage {
   id: string;
   url: string;
+  sourceUrl?: string;
   prompt: string;
   isLoaded: boolean;
 }
+
+const IMAGE_PRECONNECT_HOST = "https://claude.artimg.top";
 
 /**
  * CreateNew 页面组件
@@ -214,6 +221,17 @@ const CreateNew: React.FC = () => {
     void refreshCurrentUser({ silent: true });
   };
 
+  /**
+   * 预热图片请求，减少展示前的等待时间
+   */
+  const preloadImage = (imageUrl: string) => {
+    if (typeof window === "undefined" || !imageUrl) return;
+    const preloadedImage = new window.Image();
+
+    preloadedImage.decoding = "async";
+    preloadedImage.src = imageUrl;
+  };
+
   // 验证表单是否可提交
   const canGenerate = useMemo(() => {
     return prompt.trim().length > 0 && !isGenerating;
@@ -295,6 +313,83 @@ const CreateNew: React.FC = () => {
   };
 
   /**
+   * 图片任务轮询参数
+   */
+  const IMAGE_TASK_POLL_INTERVAL_MS = 2000;
+  const IMAGE_TASK_POLL_MAX_TIMES = 90;
+
+  interface ImageTaskStatusResponse {
+    message?: string;
+    data?: {
+      status?: string;
+      cosUrl?: string;
+      previewUrl?: string;
+    };
+  }
+
+  /**
+   * 轮询图片任务状态，直到返回最终 cosUrl
+   */
+  const waitForImageTask = async (
+    taskId: string,
+    queryStatus: () => Promise<ImageTaskStatusResponse>,
+  ): Promise<{ cosUrl: string; previewUrl?: string }> => {
+    for (let attempt = 0; attempt < IMAGE_TASK_POLL_MAX_TIMES; attempt += 1) {
+      const statusResponse = await queryStatus();
+      const status = statusResponse.data?.status?.toLowerCase();
+
+      if (status === "success") {
+        const finalCosUrl = statusResponse.data?.cosUrl;
+
+        if (finalCosUrl) {
+          return {
+            cosUrl: finalCosUrl,
+            previewUrl: statusResponse.data?.previewUrl,
+          };
+        }
+
+        throw new Error("任务已完成，但未返回图片地址");
+      }
+
+      if (
+        status === "failed" ||
+        status === "fail" ||
+        status === "error" ||
+        status === "cancelled"
+      ) {
+        throw new Error(statusResponse.message || "生成失败，请重试");
+      }
+
+      if (attempt < IMAGE_TASK_POLL_MAX_TIMES - 1) {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, IMAGE_TASK_POLL_INTERVAL_MS);
+        });
+      }
+    }
+
+    throw new Error(`生成超时，请稍后重试（任务ID: ${taskId}）`);
+  };
+
+  /**
+   * 轮询 Banana 任务状态
+   */
+  const waitForBananaImage = async (
+    taskId: string,
+    queryPath: string,
+  ): Promise<{ cosUrl: string; previewUrl?: string }> => {
+    return waitForImageTask(taskId, () => bananaQueryImage(queryPath));
+  };
+
+  /**
+   * 轮询 text-to-image 任务状态（/app/text-to-image/tasks/{taskId}）
+   */
+  const waitForTextToImageTask = async (
+    taskId: string,
+  ): Promise<{ cosUrl: string; previewUrl?: string }> => {
+    return waitForImageTask(taskId, () => queryTextToImageTask(taskId));
+  };
+
+  /**
    * 处理生成图像
    */
   const handleGenerate = async () => {
@@ -335,7 +430,7 @@ const CreateNew: React.FC = () => {
         const isNanoBanana = !isGPTModel;
 
         if (isNanoBanana) {
-          // Nano Banana 系列使用专用接口，传入 type 和 imageUrl
+          // Nano Banana 系列使用专用接口，创建任务后轮询 queryPath 获取最终图片
           const modelValue = selectedModel;
 
           const response = await bananaCreateImage(
@@ -346,10 +441,83 @@ const CreateNew: React.FC = () => {
             inputImageUrls,
           );
 
-          if (response.success && response.data?.cosUrl) {
+          if (!response.success) {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
+
+            return;
+          }
+
+          const taskId = response.data?.upload?.taskId;
+          const queryPath = response.data?.upload?.queryPath;
+
+          if (!taskId || !queryPath) {
+            setErrorMessage("任务信息缺失，请重试");
+            setIsErrorModalOpen(true);
+
+            return;
+          }
+
+          const bananaResult = await waitForBananaImage(taskId, queryPath);
+          const normalizedFinalUrl = normalizeImageURL(bananaResult.cosUrl);
+          const normalizedPreviewUrl = bananaResult.previewUrl
+            ? normalizeImageURL(bananaResult.previewUrl)
+            : undefined;
+          const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
+
+          preloadImage(displayUrl);
+          preloadImage(normalizedFinalUrl);
+
+          const newImage: GeneratedImage = {
+            id: `${Date.now()}-0`,
+            url: displayUrl,
+            sourceUrl: normalizedFinalUrl,
+            prompt: prompt,
+            isLoaded: false,
+          };
+
+          setGeneratedImages([newImage]);
+          syncUserProfile();
+
+          addToast({
+            title: "生成成功",
+            description: "图片已生成完成",
+            color: "success",
+          });
+
+          setPrompt("");
+        } else {
+          // 非 Nano Banana 模型：调用图生图接口后，按 taskId 轮询任务结果
+          const response = await imageToImage(
+            prompt,
+            inputImageUrls,
+            sizeValue,
+          );
+
+          if (!response.success) {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
+
+            return;
+          }
+
+          const taskId = response.data?.upload?.taskId;
+
+          if (taskId) {
+            const taskResult = await waitForTextToImageTask(taskId);
+            const normalizedFinalUrl = normalizeImageURL(taskResult.cosUrl);
+            const normalizedPreviewUrl = taskResult.previewUrl
+              ? normalizeImageURL(taskResult.previewUrl)
+              : undefined;
+            const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
+
+            preloadImage(displayUrl);
+            preloadImage(normalizedFinalUrl);
+
             const newImage: GeneratedImage = {
               id: `${Date.now()}-0`,
-              url: normalizeImageURL(response.data.cosUrl),
+              url: displayUrl,
+              sourceUrl: normalizedFinalUrl,
               prompt: prompt,
               isLoaded: false,
             };
@@ -364,21 +532,12 @@ const CreateNew: React.FC = () => {
             });
 
             setPrompt("");
-          } else {
-            setErrorMessage(response.message || "生成失败，请重试");
-            setIsErrorModalOpen(true);
-          }
-        } else {
-          // 非 Nano Banana 模型调用原有的图生图接口
-          const response = await imageToImage(
-            prompt,
-            inputImageUrls,
-            sizeValue,
-          );
 
-          // 从返回的data.thirdPartyResponse.content中提取图片URL
+            return;
+          }
+
+          // 兜底旧返回结构：从 markdown 中提取图片 URL
           if (
-            !response.success ||
             !response.data?.thirdPartyResponse?.choices?.[0]?.message?.content
           ) {
             console.error("返回数据结构异常:", response);
@@ -392,39 +551,40 @@ const CreateNew: React.FC = () => {
             response.data.thirdPartyResponse.choices[0].message.content;
           const extractedImageUrls = extractImageUrls(content);
 
-          if (extractedImageUrls.length > 0) {
-            const newImages: GeneratedImage[] = extractedImageUrls.map(
-              (url, index) => ({
-                id: `${Date.now()}-${index}`,
-                url: url,
-                prompt: prompt,
-                isLoaded: false,
-              }),
-            );
-
-            setGeneratedImages(newImages);
-            syncUserProfile();
-
-            // 显示成功提示
-            addToast({
-              title: "生成成功",
-              description: "图片已生成完成",
-              color: "success",
-            });
-
-            // 清空提示词
-            setPrompt("");
-          } else {
+          if (extractedImageUrls.length === 0) {
             setErrorMessage("未能从返回数据中提取到图片URL");
             setIsErrorModalOpen(true);
+
+            return;
           }
+
+          const newImages: GeneratedImage[] = extractedImageUrls.map(
+            (url, index) => ({
+              id: `${Date.now()}-${index}`,
+              url: url,
+              sourceUrl: url,
+              prompt: prompt,
+              isLoaded: false,
+            }),
+          );
+
+          setGeneratedImages(newImages);
+          syncUserProfile();
+
+          addToast({
+            title: "生成成功",
+            description: "图片已生成完成",
+            color: "success",
+          });
+
+          setPrompt("");
         }
       } else {
         // 判断是否为 Nano Banana 系列模型
         const isNanoBanana = !isGPTModel;
 
         if (isNanoBanana) {
-          // 调用 Nano Banana 专用接口，传入 aspectRatio key（如 "1:1"）和 type
+          // 调用 Nano Banana 专用接口，创建任务后轮询 queryPath 获取最终图片
           const response = await bananaCreateImage(
             selectedModel,
             prompt,
@@ -432,10 +592,81 @@ const CreateNew: React.FC = () => {
             "text-to-image",
           );
 
-          if (response.success && response.data?.cosUrl) {
+          if (!response.success) {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
+
+            return;
+          }
+
+          const taskId = response.data?.upload?.taskId;
+          const queryPath = response.data?.upload?.queryPath;
+
+          if (!taskId || !queryPath) {
+            setErrorMessage("任务信息缺失，请重试");
+            setIsErrorModalOpen(true);
+
+            return;
+          }
+
+          const bananaResult = await waitForBananaImage(taskId, queryPath);
+          const normalizedFinalUrl = normalizeImageURL(bananaResult.cosUrl);
+          const normalizedPreviewUrl = bananaResult.previewUrl
+            ? normalizeImageURL(bananaResult.previewUrl)
+            : undefined;
+          const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
+
+          preloadImage(displayUrl);
+          preloadImage(normalizedFinalUrl);
+
+          const newImage: GeneratedImage = {
+            id: `${Date.now()}-0`,
+            url: displayUrl,
+            sourceUrl: normalizedFinalUrl,
+            prompt: prompt,
+            isLoaded: false,
+          };
+
+          setGeneratedImages([newImage]);
+          syncUserProfile();
+
+          // 显示成功提示
+          addToast({
+            title: "生成成功",
+            description: "图片已生成完成",
+            color: "success",
+          });
+
+          // 清空提示词
+          setPrompt("");
+        } else {
+          // 非 Nano Banana 模型：调用文生图接口后，按 taskId 轮询任务结果
+          const response = await generateImage(prompt, sizeValue);
+
+          if (!response.success) {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
+
+            return;
+          }
+
+          const taskId = response.data?.upload?.taskId;
+
+          if (taskId) {
+            const taskResult = await waitForTextToImageTask(taskId);
+            const normalizedFinalUrl = normalizeImageURL(taskResult.cosUrl);
+            const normalizedPreviewUrl = taskResult.previewUrl
+              ? normalizeImageURL(taskResult.previewUrl)
+              : undefined;
+            const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
+
+            preloadImage(displayUrl);
+            preloadImage(normalizedFinalUrl);
+
             const newImage: GeneratedImage = {
               id: `${Date.now()}-0`,
-              url: normalizeImageURL(response.data.cosUrl),
+              url: displayUrl,
+              sourceUrl: normalizedFinalUrl,
               prompt: prompt,
               isLoaded: false,
             };
@@ -443,45 +674,46 @@ const CreateNew: React.FC = () => {
             setGeneratedImages([newImage]);
             syncUserProfile();
 
-            // 显示成功提示
             addToast({
               title: "生成成功",
               description: "图片已生成完成",
               color: "success",
             });
 
-            // 清空提示词
             setPrompt("");
-          } else {
-            setErrorMessage(response.message || "生成失败，请重试");
+
+            return;
+          }
+
+          // 兜底旧返回结构：直接读取 thirdPartyResponse.data
+          if (!response.data?.thirdPartyResponse?.data) {
+            setErrorMessage(response.message || "返回数据格式错误，请重试");
             setIsErrorModalOpen(true);
+
+            return;
           }
-        } else {
-          // 原有文生图逻辑保持不变
-          const response = await generateImage(prompt, sizeValue);
 
-          if (response.success && response.data.thirdPartyResponse.data) {
-            const newImages: GeneratedImage[] =
-              response.data.thirdPartyResponse.data.map((item, index) => ({
-                id: `${Date.now()}-${index}`,
-                url: item.url,
-                prompt: item.revised_prompt,
-                isLoaded: false,
-              }));
+          const newImages: GeneratedImage[] =
+            response.data.thirdPartyResponse.data.map((item, index) => ({
+              id: `${Date.now()}-${index}`,
+              url: item.url,
+              sourceUrl: item.url,
+              prompt: item.revised_prompt,
+              isLoaded: false,
+            }));
 
-            setGeneratedImages(newImages);
-            syncUserProfile();
+          setGeneratedImages(newImages);
+          syncUserProfile();
 
-            // 显示成功提示
-            addToast({
-              title: "生成成功",
-              description: "图片已生成完成",
-              color: "success",
-            });
+          // 显示成功提示
+          addToast({
+            title: "生成成功",
+            description: "图片已生成完成",
+            color: "success",
+          });
 
-            // 清空提示词
-            setPrompt("");
-          }
+          // 清空提示词
+          setPrompt("");
         }
       }
     } catch (error: any) {
@@ -501,22 +733,6 @@ const CreateNew: React.FC = () => {
       setIsGenerating(false);
       setLoadingPlaceholders(0);
     }
-  };
-
-  /**
-   * 生成随机提示词
-   */
-  const handleRandomPrompt = () => {
-    const randomPrompts = [
-      "一只可爱的橘猫在阳光下打盹",
-      "未来城市的霓虹灯夜景",
-      "梦幻般的水下世界，五彩斑斓的珊瑚礁",
-      "宁静的日式庭院，樱花飘落",
-      "科幻风格的太空站内部",
-    ];
-    const randomIndex = Math.floor(Math.random() * randomPrompts.length);
-
-    setPrompt(randomPrompts[randomIndex]);
   };
 
   /**
@@ -556,7 +772,9 @@ const CreateNew: React.FC = () => {
         const response = await uploadImage(file);
 
         if (response.code === 200 && response.data.url) {
-          setUploadedImages((prev) => [...prev, response.data.url]);
+          const normalizedUploadedUrl = normalizeImageURL(response.data.url);
+
+          setUploadedImages((prev) => [...prev, normalizedUploadedUrl]);
         }
       } catch (error) {
         console.error("上传失败:", error);
@@ -652,6 +870,10 @@ const CreateNew: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#030712]">
+      <NextHead>
+        <link crossOrigin="" href={IMAGE_PRECONNECT_HOST} rel="preconnect" />
+        <link href="//claude.artimg.top" rel="dns-prefetch" />
+      </NextHead>
       <Head />
       {/* 顶部导航 */}
       <TopNavbar />
@@ -742,10 +964,12 @@ const CreateNew: React.FC = () => {
                       return (
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-default-200 rounded flex items-center justify-center flex-shrink-0">
-                            <img
+                            <Image
                               alt={model.name}
                               className="w-6 h-6"
+                              height={24}
                               src={getModelIcon(model.manufacturer)}
+                              width={24}
                             />
                           </div>
                           <div className="flex-1">
@@ -772,10 +996,12 @@ const CreateNew: React.FC = () => {
                       <SelectItem key={model.model_key} textValue={model.name}>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-default-200 rounded flex items-center justify-center flex-shrink-0">
-                            <img
+                            <Image
                               alt={model.name}
                               className="w-5 h-5"
+                              height={20}
                               src={getModelIcon(model.manufacturer)}
+                              width={20}
                             />
                           </div>
                           <span className="font-medium">{model.name}</span>
@@ -822,6 +1048,8 @@ const CreateNew: React.FC = () => {
                             key={index}
                             className="relative rounded-lg overflow-hidden aspect-square"
                           >
+                            {/* 这里需要展示任意外链/上传地址，保留原生 img。 */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               alt={`上传的图片 ${index + 1}`}
                               className="w-full h-full object-cover"
@@ -915,6 +1143,8 @@ const CreateNew: React.FC = () => {
                                   key={index}
                                   className="relative rounded-lg overflow-hidden aspect-square bg-default-100"
                                 >
+                                  {/* 这里是用户输入的任意 URL 预览，保留原生 img。 */}
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     alt={`URL图片 ${index + 1}`}
                                     className="w-full h-full object-cover"
@@ -1106,7 +1336,7 @@ const CreateNew: React.FC = () => {
                       )}
 
                     {/* 已生成的图片 */}
-                    {generatedImages.map((image) => (
+                    {generatedImages.map((image, index) => (
                       <div
                         key={image.id}
                         className="w-full h-full flex flex-col items-center justify-center gap-3 lg:gap-6"
@@ -1116,7 +1346,9 @@ const CreateNew: React.FC = () => {
                           aria-label="预览生成图片"
                           className="w-full max-w-[600px] min-h-[350px] lg:min-h-[500px] max-h-[350px] cursor-pointer relative overflow-hidden rounded-xl lg:rounded-2xl flex items-center justify-center border-0 bg-transparent p-0"
                           type="button"
-                          onClick={() => setPreviewImage(image.url)}
+                          onClick={() =>
+                            setPreviewImage(image.sourceUrl || image.url)
+                          }
                         >
                           {!image.isLoaded && (
                             <div className="absolute inset-0 z-10 rounded-xl lg:rounded-2xl bg-gradient-to-br from-primary/20 via-secondary/20 to-primary/20 animate-pulse flex items-center justify-center">
@@ -1159,12 +1391,18 @@ const CreateNew: React.FC = () => {
                               </div>
                             </div>
                           )}
+                          {/* 生成结果可能来自任意第三方链接，保留原生 img。 */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             alt={image.prompt}
                             className={`max-w-full max-h-full object-contain transition-all duration-500 hover:scale-105 ${
                               image.isLoaded ? "opacity-100" : "opacity-0"
                             }`}
-                            loading="lazy"
+                            decoding="async"
+                            {...({
+                              fetchpriority: index === 0 ? "high" : "auto",
+                            } as Record<string, string>)}
+                            loading={index === 0 ? "eager" : "lazy"}
                             src={image.url}
                             onLoad={() => handleImageLoad(image.id)}
                           />
@@ -1181,7 +1419,10 @@ const CreateNew: React.FC = () => {
                             }
                             variant="flat"
                             onPress={() =>
-                              handleDownloadImage(image.url, image.id)
+                              handleDownloadImage(
+                                image.sourceUrl || image.url,
+                                image.id,
+                              )
                             }
                           >
                             下载图片
@@ -1225,10 +1466,11 @@ const CreateNew: React.FC = () => {
 
         {/* 图片预览模态框 */}
         {previewImage && (
-          <button
+          <div
             aria-label="图片预览"
+            aria-modal="true"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm border-0 cursor-default"
-            type="button"
+            role="dialog"
             onClick={() => setPreviewImage(null)}
             onKeyDown={(e) => {
               if (e.key === "Escape") setPreviewImage(null);
@@ -1253,13 +1495,15 @@ const CreateNew: React.FC = () => {
                 }
               }}
             >
+              {/* 预览弹层沿用原生 img，避免对外链图片施加 next/image 限制。 */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 alt="预览图片"
                 className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain shadow-2xl"
                 src={previewImage}
               />
             </div>
-          </button>
+          </div>
         )}
 
         {/* 错误提示模态框 */}

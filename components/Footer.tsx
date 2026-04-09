@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import NextLink from "next/link";
 import { Link } from "@heroui/link";
 
@@ -14,10 +15,12 @@ const Footer: React.FC = () => {
           <div className="col-span-1">
             <NextLink className="mb-6 inline-flex items-center gap-3" href="/">
               <div className="flex ">
-                <img
+                <Image
                   alt="ArtImg logo candidate"
                   className="h-11 w-11 rounded-2xl"
+                  height={44}
                   src="/image/artimg-icon.svg"
+                  width={44}
                 />
               </div>
               <span className="text-xl font-bold tracking-tight text-white">

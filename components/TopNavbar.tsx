@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "@heroui/button";
@@ -30,7 +31,6 @@ import {
 } from "lucide-react";
 
 import LoginModal from "@/components/LoginModal";
-import { Logo } from "@/components/icons";
 import { useUserStore } from "@/store/useUserStore";
 
 const navItems = [
@@ -116,10 +116,13 @@ const TopNavbar: React.FC = () => {
               href="/"
             >
               <div className="flex ">
-                <img
+                <Image
+                  priority
                   alt="ArtImg logo candidate"
-                  className="h-11 w-11 rounded-2xl "
+                  className="h-11 w-11 rounded-2xl"
+                  height={44}
                   src="/image/artimg-icon.svg"
+                  width={44}
                 />
                 {/* <div className="hidden h-7 w-px bg-white/10 sm:block" />
                 <div className="relative hidden sm:block"> */}
@@ -196,6 +199,7 @@ const TopNavbar: React.FC = () => {
                       key="profile-info"
                       isReadOnly
                       className="cursor-default opacity-100"
+                      textValue="用户信息"
                     >
                       <div className="flex items-center gap-2 pb-2">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xs font-bold text-white">
@@ -217,11 +221,13 @@ const TopNavbar: React.FC = () => {
                       key="divider"
                       isReadOnly
                       className="h-px bg-divider p-0 opacity-100"
+                      textValue="分隔线"
                     />
                     <DropdownItem
                       key="my-orders"
                       className="py-3"
                       startContent={<ReceiptText className="h-4 w-4" />}
+                      textValue="我的订单"
                       onPress={() => void router.push("/my-orders")}
                     >
                       我的订单
@@ -230,6 +236,7 @@ const TopNavbar: React.FC = () => {
                       key="my-creations"
                       className="py-3"
                       startContent={<FolderOpen className="h-4 w-4" />}
+                      textValue="我的创作"
                       onPress={() => void router.push("/my-creations")}
                     >
                       我的创作
@@ -239,6 +246,7 @@ const TopNavbar: React.FC = () => {
                       className="py-3 text-danger"
                       color="danger"
                       startContent={<LogOut className="h-4 w-4" />}
+                      textValue="退出登录"
                       onPress={() => {
                         clearUser();
                         void router.push("/login");

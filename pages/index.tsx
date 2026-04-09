@@ -10,7 +10,6 @@ import { useEffect, useRef, useState } from "react";
 import NextLink from "next/link";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useRouter } from "next/router";
 import { motion, animate, useInView, useReducedMotion } from "framer-motion";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
@@ -68,20 +67,6 @@ interface StatItem {
   decimals?: number;
 }
 
-/** 第二屏场景对比轮播数据 */
-interface CompareSlide {
-  id: number;
-  title: string;
-  tag: string;
-  description: string;
-  detail: string;
-  bullets: string[];
-  beforeImage: string;
-  afterImage: string;
-  beforeLabel: string;
-  afterLabel: string;
-}
-
 /** 第三屏技术支柱数据 */
 interface TechPillar {
   id: number;
@@ -91,26 +76,6 @@ interface TechPillar {
   image: string;
   reverse: boolean;
   icon: React.ReactNode;
-}
-
-/** 第五屏定价数据 */
-interface PricingPlan {
-  id: number;
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  features: string[];
-  isPopular: boolean;
-  ctaText: string;
-  ctaHref: string;
-}
-
-/** 第六屏 FAQ 数据 */
-interface FaqItem {
-  key: string;
-  question: string;
-  answer: string;
 }
 
 /** 通用滚动显隐包装组件属性 */
@@ -132,19 +97,6 @@ interface SectionHeadingProps {
 interface StatCounterProps extends StatItem {
   description?: string;
 }
-
-/* ============================
-   静态数据
-   ============================ */
-
-/** 落地页导航数据 */
-const landingNavItems = [
-  { label: "能力展示", href: "#showcase" },
-  { label: "技术支柱", href: "#tech" },
-  { label: "创作画廊", href: "#gallery" },
-  { label: "订阅价格", href: "#pricing" },
-  { label: "常见问题", href: "#faq" },
-];
 
 type IndexPageProps = {
   techPillarsData: TechPillarData[];
@@ -262,11 +214,6 @@ function StatCounter({
   );
 }
 
-/** 价格功能列表对勾图标 - 使用 lucide-react */
-function CheckIcon() {
-  return <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />;
-}
-
 /* ============================
    页面主组件
    ============================ */
@@ -276,7 +223,6 @@ export default function IndexNewPage({
   pricingPlans,
   faqItems,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
-  const router = useRouter();
   const token = useUserStore((state) => state.token);
   const openLoginModal = useLoginModalStore((state) => state.openModal);
   const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
@@ -284,7 +230,14 @@ export default function IndexNewPage({
 
   /** 画廊数据状态 */
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
-  const [galleryLoading, setGalleryLoading] = useState(true);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const gallerySectionRef = useRef<HTMLElement>(null);
+  const isGallerySectionInView = useInView(gallerySectionRef, {
+    once: true,
+    amount: 0.08,
+    margin: "200px 0px",
+  });
+  const hasRequestedGalleryRef = useRef(false);
 
   const techPillars: TechPillar[] = techPillarsData.map((pillar) => ({
     ...pillar,
@@ -302,7 +255,14 @@ export default function IndexNewPage({
 
   /** 加载画廊数据 */
   useEffect(() => {
+    if (!isGallerySectionInView || hasRequestedGalleryRef.current) {
+      return;
+    }
+
+    hasRequestedGalleryRef.current = true;
+
     const fetchGallery = async () => {
+      setGalleryLoading(true);
       try {
         const res = await getGalleryList(1, 12);
 
@@ -322,7 +282,7 @@ export default function IndexNewPage({
     };
 
     fetchGallery();
-  }, []);
+  }, [isGallerySectionInView]);
 
   useEffect(() => {
     const syncAnnouncementVisibility = () => {
@@ -486,6 +446,15 @@ export default function IndexNewPage({
                 >
                   浏览画廊
                 </Button>
+                <Button
+                  as={NextLink}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 text-base font-semibold text-white shadow-lg shadow-blue-500/25"
+                  href="/createNew"
+                  radius="full"
+                  size="lg"
+                >
+                  测试按钮
+                </Button>
               </div>
             </Reveal>
 
@@ -626,6 +595,7 @@ export default function IndexNewPage({
             第四屏 - 画廊瀑布流（与技术支柱互换位置）
             ============================================ */}
         <section
+          ref={gallerySectionRef}
           className="w-full bg-[#050b16] px-4 py-20 md:py-28"
           id="gallery"
         >
@@ -640,10 +610,16 @@ export default function IndexNewPage({
 
             {/* 动态分包：瀑布流区块 */}
             <Reveal delay={0.06}>
-              <GalleryMasonryBlock
-                galleryImages={galleryImages}
-                galleryLoading={galleryLoading}
-              />
+              {isGallerySectionInView ||
+              galleryLoading ||
+              galleryImages.length > 0 ? (
+                <GalleryMasonryBlock
+                  galleryImages={galleryImages}
+                  galleryLoading={galleryLoading}
+                />
+              ) : (
+                <div className="h-[360px] rounded-[1.5rem] border border-white/5 bg-white/[0.02]" />
+              )}
             </Reveal>
 
             <Reveal className="mt-12 text-center" delay={0.1}>

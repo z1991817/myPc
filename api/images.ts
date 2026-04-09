@@ -205,8 +205,39 @@ export interface BananaCreateImageResponse {
   message: string;
   timestamp: string;
   data: {
-    cosUrl: string;
+    upload: {
+      taskId: string;
+      status: string;
+      queryPath: string;
+    };
+    cosUrl?: string;
     thirdPartyResponse: object;
+  };
+}
+
+// Banana 任务状态查询响应类型
+export interface BananaQueryImageResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+  data: {
+    taskId: string;
+    status: string;
+    cosUrl?: string;
+    previewUrl?: string;
+  };
+}
+
+// text-to-image 任务状态查询响应类型
+export interface TextToImageTaskResponse {
+  success: boolean;
+  message: string;
+  timestamp: string;
+  data: {
+    taskId: string;
+    status: string;
+    cosUrl?: string;
+    previewUrl?: string;
   };
 }
 
@@ -232,4 +263,24 @@ export const bananaCreateImage = async (
     type,
     ...(imageUrls && imageUrls.length > 0 ? { imageUrls } : {}),
   });
+};
+
+/**
+ * Banana 任务状态查询接口
+ * @param queryPath 创建接口返回的 data.upload.queryPath
+ */
+export const bananaQueryImage = async (
+  queryPath: string,
+): Promise<BananaQueryImageResponse> => {
+  return request.get(queryPath);
+};
+
+/**
+ * text-to-image 任务状态查询接口
+ * @param taskId 创建接口返回的 data.upload.taskId
+ */
+export const queryTextToImageTask = async (
+  taskId: string,
+): Promise<TextToImageTaskResponse> => {
+  return request.get(`/app/text-to-image/tasks/${taskId}`);
 };
