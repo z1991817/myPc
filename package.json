@@ -51,6 +51,7 @@
     "@heroui/toast": "2.0.22",
     "@heroui/tooltip": "2.2.29",
     "@heroui/user": "2.2.26",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@react-aria/visually-hidden": "3.8.31",
     "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.6",

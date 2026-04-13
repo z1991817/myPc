@@ -23,6 +23,30 @@ import { CopyIcon } from "@/components/icons";
 import TopNavbar from "@/components/TopNavbar";
 
 /**
+ * 画廊列表预览图优先级：
+ * 1. 后端 preview_url / previewUrl
+ * 2. cos_url（若未带处理参数则拼接轻量预览参数）
+ */
+const resolveGalleryPreviewURL = (item: GalleryImageItem): string => {
+  const normalizedCosUrl = normalizeImageURL(item.cos_url);
+  const rawPreviewUrl = item.preview_url || item.previewUrl;
+
+  if (rawPreviewUrl) {
+    return normalizeImageURL(rawPreviewUrl);
+  }
+
+  if (!normalizedCosUrl || normalizedCosUrl.includes("imageMogr2/")) {
+    return normalizedCosUrl;
+  }
+
+  if (normalizedCosUrl.includes("?")) {
+    return normalizedCosUrl;
+  }
+
+  return `${normalizedCosUrl}?imageMogr2/thumbnail/1024x>/strip/quality/75/format/webp`;
+};
+
+/**
  * 图片卡片组件 Props
  */
 interface ImageCardProps {
@@ -37,6 +61,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLButtonElement>(null);
+  const previewImageUrl = resolveGalleryPreviewURL(image);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -78,12 +103,13 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
             {isVisible && (
               <Image
                 fill
+                unoptimized
                 alt={image.prompt}
                 className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${
                   isLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                src={image.cos_url}
+                src={previewImageUrl}
                 onLoad={() => setIsLoaded(true)}
               />
             )}
@@ -209,6 +235,7 @@ export default function GalleryPage() {
         const normalizedList = list.map((item) => ({
           ...item,
           cos_url: normalizeImageURL(item.cos_url),
+          preview_url: resolveGalleryPreviewURL(item),
         }));
 
         setImages((prev) =>

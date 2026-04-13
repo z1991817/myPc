@@ -1,3 +1,7 @@
+import { fetchEventSource } from "@microsoft/fetch-event-source";
+
+import { getApiBaseURL, normalizeApiPath } from "@/lib/api-base-url";
+
 // 图片接口类型定义
 export interface ImageItem {
   id: string;
@@ -54,6 +58,7 @@ export interface GenerateImageResponse {
   message: string;
   timestamp: string;
   data: {
+    taskId?: string;
     thirdPartyUrl: string;
     thirdPartyResponse: {
       created: number;
@@ -74,11 +79,27 @@ export interface GenerateImageResponse {
       taskId: string;
       status: string;
       queryPath: string;
+      ssePath?: string;
     };
   };
 }
 
 import request from "./request";
+
+const buildApiRequestUrl = (path: string) => {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const baseURL = getApiBaseURL().replace(/\/+$/, "");
+  const normalizedPath = normalizeApiPath(path);
+
+  if (baseURL.endsWith("/app") && normalizedPath.startsWith("/app/")) {
+    return `${baseURL}${normalizedPath.slice(4)}`;
+  }
+
+  return `${baseURL}${normalizedPath}`;
+};
 
 // 模型列表类型
 export interface ModelItem {
@@ -186,6 +207,7 @@ export interface ImageToImageResponse {
       taskId: string;
       status: string;
       queryPath: string;
+      ssePath?: string;
     };
   };
 }
@@ -201,6 +223,7 @@ export const imageToImage = async (
 
 // Banana 系列图片生成响应类型
 export interface BananaCreateImageResponse {
+  code?: number;
   success: boolean;
   message: string;
   timestamp: string;
@@ -209,6 +232,7 @@ export interface BananaCreateImageResponse {
       taskId: string;
       status: string;
       queryPath: string;
+      ssePath?: string;
     };
     cosUrl?: string;
     thirdPartyResponse: object;
@@ -254,6 +278,7 @@ export const bananaCreateImage = async (
   prompt: string,
   aspectRatio: string,
   type: "text-to-image" | "image-to-image",
+  idempotencyKey: string,
   imageUrls?: string[],
 ): Promise<BananaCreateImageResponse> => {
   return request.post("/app/banana-CreateImage", {
@@ -261,6 +286,7 @@ export const bananaCreateImage = async (
     prompt,
     aspectRatio,
     type,
+    idempotencyKey,
     ...(imageUrls && imageUrls.length > 0 ? { imageUrls } : {}),
   });
 };
@@ -273,6 +299,48 @@ export const bananaQueryImage = async (
   queryPath: string,
 ): Promise<BananaQueryImageResponse> => {
   return request.get(queryPath);
+};
+
+/**
+ * Banana 任务 SSE 订阅接口
+ * @param ssePath 创建接口返回的 data.upload.ssePath
+ * @param token 登录令牌
+ * @param onEvent SSE 回调
+ */
+export const bananaSubscribeTask = (
+  ssePath: string,
+  token: string,
+  onEvent: (eventName: string, data: unknown) => void,
+) => {
+  const controller = new AbortController();
+  const promise = fetchEventSource(buildApiRequestUrl(ssePath), {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    signal: controller.signal,
+    openWhenHidden: true,
+    onmessage(event) {
+      if (!event.data) return;
+      const eventName = event.event || "task_status";
+
+      try {
+        const parsedData = JSON.parse(event.data);
+
+        onEvent(eventName, parsedData);
+      } catch (error) {
+        console.error("解析 SSE 数据失败:", error);
+      }
+    },
+    onerror(error) {
+      throw error;
+    },
+  });
+
+  return {
+    stop: () => controller.abort(),
+    promise,
+  };
 };
 
 /**

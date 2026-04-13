@@ -33,7 +33,7 @@ import {
   imageToImage,
   bananaCreateImage,
   bananaQueryImage,
-  queryTextToImageTask,
+  bananaSubscribeTask,
   getModels,
 } from "@/api/images";
 import LoginModal from "@/components/LoginModal";
@@ -127,6 +127,184 @@ interface GeneratedImage {
 }
 
 const IMAGE_PRECONNECT_HOST = "https://claude.artimg.top";
+const BANANA_TASK_STORAGE_KEY = "banana-create-task";
+const BANANA_SSE_FALLBACK_DELAY_MS = 5000;
+const BANANA_POLL_INTERVAL_MS = 3000;
+const IMAGE_TASK_POLL_INTERVAL_MS = 2000;
+const IMAGE_TASK_POLL_MAX_TIMES = 90;
+
+type BananaTaskStatus =
+  | "pending"
+  | "running"
+  | "retrying"
+  | "success"
+  | "failed";
+
+interface BananaTaskMeta {
+  taskId: string;
+  queryPath: string;
+  ssePath?: string;
+}
+
+interface BananaTaskPayload {
+  taskId?: string;
+  status?: string;
+  cosUrl?: string;
+  previewUrl?: string;
+  message?: string;
+}
+
+interface BananaTaskStoragePayload extends BananaTaskMeta {
+  prompt: string;
+}
+
+interface ImageTaskStatusResponse {
+  message?: string;
+  data?: {
+    status?: string;
+    cosUrl?: string;
+    previewUrl?: string;
+  };
+}
+
+const BANANA_TERMINAL_STATUS = new Set<BananaTaskStatus>(["success", "failed"]);
+
+const BANANA_STATUS_LABEL_MAP: Record<BananaTaskStatus, string> = {
+  pending: "排队中",
+  running: "生成中",
+  retrying: "重试中",
+  success: "已完成",
+  failed: "失败",
+};
+
+/**
+ * SSE 和轮询只认固定状态集，未知状态统一视为 running。
+ */
+const normalizeBananaStatus = (status?: string): BananaTaskStatus => {
+  const normalizedStatus = status?.toLowerCase();
+
+  if (
+    normalizedStatus === "pending" ||
+    normalizedStatus === "running" ||
+    normalizedStatus === "retrying" ||
+    normalizedStatus === "success" ||
+    normalizedStatus === "failed"
+  ) {
+    return normalizedStatus;
+  }
+
+  if (
+    normalizedStatus === "fail" ||
+    normalizedStatus === "error" ||
+    normalizedStatus === "cancelled"
+  ) {
+    return "failed";
+  }
+
+  return "running";
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const readString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const readBananaTaskMetaFromCreateResponse = (
+  response: unknown,
+): BananaTaskMeta | null => {
+  if (!isRecord(response)) {
+    return null;
+  }
+
+  const responseData = response.data;
+  const responseResult = response.result;
+  if (isRecord(responseData) && isRecord(responseData.upload)) {
+    const taskId =
+      readString(responseData.taskId) ||
+      readString(responseData.task_id) ||
+      readString(responseData.id);
+    const queryPath =
+      readString(responseData.upload.queryPath) ||
+      readString(responseData.upload.query_path);
+    const ssePath =
+      readString(responseData.upload.ssePath) ||
+      readString(responseData.upload.sse_path) ||
+      readString(responseData.upload.eventPath);
+
+    if (taskId && queryPath) {
+      return { taskId, queryPath, ssePath };
+    }
+  }
+
+  const candidates: unknown[] = [
+    isRecord(responseData) ? responseData.upload : undefined,
+    response.upload,
+    isRecord(responseData) && isRecord(responseData.data)
+      ? responseData.data.upload
+      : undefined,
+    isRecord(responseResult) ? responseResult.upload : undefined,
+    responseData,
+    responseResult,
+    response,
+  ];
+
+  for (const candidate of candidates) {
+    if (!isRecord(candidate)) {
+      continue;
+    }
+
+    const taskId =
+      readString(candidate.taskId) ||
+      readString(candidate.task_id) ||
+      readString(candidate.id);
+    const queryPath =
+      readString(candidate.queryPath) ||
+      readString(candidate.query_path) ||
+      readString(candidate.path) ||
+      (taskId ? `/app/text-to-image/tasks/${taskId}` : undefined);
+    const ssePath =
+      readString(candidate.ssePath) ||
+      readString(candidate.sse_path) ||
+      readString(candidate.eventPath);
+
+    if (!taskId || !queryPath) {
+      continue;
+    }
+
+    return {
+      taskId,
+      queryPath,
+      ssePath,
+    };
+  }
+
+  return null;
+};
+
+const createTaskFailedError = (message: string): Error => {
+  const failedError = new Error(message) as Error & { isTaskFailed?: boolean };
+
+  failedError.isTaskFailed = true;
+
+  return failedError;
+};
+
+const isTaskFailedError = (error: unknown): boolean =>
+  Boolean((error as { isTaskFailed?: boolean })?.isTaskFailed);
+
+const createSseTimeoutError = (): Error => {
+  const timeoutError = new Error("SSE 连接超时") as Error & {
+    isSseTimeout?: boolean;
+  };
+
+  timeoutError.isSseTimeout = true;
+
+  return timeoutError;
+};
+
+const isSseTimeoutError = (error: unknown): boolean =>
+  Boolean((error as { isSseTimeout?: boolean })?.isSseTimeout);
 
 /**
  * CreateNew 页面组件
@@ -159,6 +337,12 @@ const CreateNew: React.FC = () => {
   const [useImageUrl, setUseImageUrl] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [urlImages, setUrlImages] = useState<string[]>([]);
+  const [bananaTaskStatus, setBananaTaskStatus] =
+    useState<BananaTaskStatus | null>(null);
+  const [bananaTaskId, setBananaTaskId] = useState<string | null>(null);
+  const bananaTaskTransportRef = useRef<(() => void) | null>(null);
+  const bananaTaskRunIdRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   // 当前选中的模型对象
   const selectedModelData = useMemo(
@@ -215,7 +399,20 @@ const CreateNew: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (bananaTaskTransportRef.current) {
+        bananaTaskTransportRef.current();
+        bananaTaskTransportRef.current = null;
+      }
+    };
+  }, []);
+
   const promptLength = useMemo(() => prompt.length, [prompt]);
+  const bananaStatusLabel = bananaTaskStatus
+    ? BANANA_STATUS_LABEL_MAP[bananaTaskStatus]
+    : null;
 
   const syncUserProfile = () => {
     void refreshCurrentUser({ silent: true });
@@ -313,21 +510,6 @@ const CreateNew: React.FC = () => {
   };
 
   /**
-   * 图片任务轮询参数
-   */
-  const IMAGE_TASK_POLL_INTERVAL_MS = 2000;
-  const IMAGE_TASK_POLL_MAX_TIMES = 90;
-
-  interface ImageTaskStatusResponse {
-    message?: string;
-    data?: {
-      status?: string;
-      cosUrl?: string;
-      previewUrl?: string;
-    };
-  }
-
-  /**
    * 轮询图片任务状态，直到返回最终 cosUrl
    */
   const waitForImageTask = async (
@@ -370,24 +552,506 @@ const CreateNew: React.FC = () => {
     throw new Error(`生成超时，请稍后重试（任务ID: ${taskId}）`);
   };
 
-  /**
-   * 轮询 Banana 任务状态
-   */
-  const waitForBananaImage = async (
-    taskId: string,
-    queryPath: string,
-  ): Promise<{ cosUrl: string; previewUrl?: string }> => {
-    return waitForImageTask(taskId, () => bananaQueryImage(queryPath));
+  const createIdempotencyKey = () => {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.crypto?.randomUUID === "function"
+    ) {
+      return window.crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   };
 
-  /**
-   * 轮询 text-to-image 任务状态（/app/text-to-image/tasks/{taskId}）
-   */
-  const waitForTextToImageTask = async (
-    taskId: string,
-  ): Promise<{ cosUrl: string; previewUrl?: string }> => {
-    return waitForImageTask(taskId, () => queryTextToImageTask(taskId));
+  const stopBananaTaskTransport = (invalidateRunId: boolean = false) => {
+    if (bananaTaskTransportRef.current) {
+      bananaTaskTransportRef.current();
+      bananaTaskTransportRef.current = null;
+    }
+
+    if (invalidateRunId) {
+      bananaTaskRunIdRef.current += 1;
+    }
   };
+
+  const saveBananaTaskToStorage = (payload: BananaTaskStoragePayload): void => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(BANANA_TASK_STORAGE_KEY, JSON.stringify(payload));
+  };
+
+  const clearBananaTaskFromStorage = () => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(BANANA_TASK_STORAGE_KEY);
+  };
+
+  const readBananaTaskFromStorage = (): BananaTaskStoragePayload | null => {
+    if (typeof window === "undefined") return null;
+    const raw = localStorage.getItem(BANANA_TASK_STORAGE_KEY);
+
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (!isRecord(parsed)) {
+        return null;
+      }
+
+      const taskId = readString(parsed.taskId);
+      const queryPath = readString(parsed.queryPath);
+      const ssePath = readString(parsed.ssePath);
+      const taskPrompt = readString(parsed.prompt) ?? "";
+
+      if (!taskId || !queryPath) {
+        return null;
+      }
+
+      return {
+        taskId,
+        queryPath,
+        ssePath,
+        prompt: taskPrompt,
+      };
+    } catch (error) {
+      console.error("解析本地任务缓存失败:", error);
+
+      return null;
+    }
+  };
+
+  const extractBananaTaskPayload = (raw: unknown): BananaTaskPayload | null => {
+    if (!isRecord(raw)) return null;
+
+    const source = isRecord(raw.data) ? raw.data : raw;
+    const taskId = readString(source.taskId);
+    const status = readString(source.status);
+    const previewUrl = readString(source.previewUrl);
+    const cosUrl = readString(source.cosUrl);
+    const message = readString(source.message) ?? readString(raw.message);
+
+    if (!taskId && !status && !previewUrl && !cosUrl && !message) {
+      return null;
+    }
+
+    return {
+      taskId,
+      status,
+      previewUrl,
+      cosUrl,
+      message,
+    };
+  };
+
+  const isAbortError = (error: unknown) => {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return true;
+    }
+
+    return error instanceof Error && error.name === "AbortError";
+  };
+
+  const createErrorFromUnknown = (
+    error: unknown,
+    fallbackMessage: string,
+  ): Error => {
+    if (error instanceof Error) {
+      return error;
+    }
+
+    return new Error(fallbackMessage);
+  };
+
+  const applyBananaSuccessResult = (
+    taskPayload: BananaTaskPayload,
+    sourcePrompt: string,
+    runId: number,
+  ) => {
+    const normalizedPreviewUrl = taskPayload.previewUrl
+      ? normalizeImageURL(taskPayload.previewUrl)
+      : undefined;
+    const normalizedCosUrl = taskPayload.cosUrl
+      ? normalizeImageURL(taskPayload.cosUrl)
+      : undefined;
+    const displayUrl = normalizedPreviewUrl || normalizedCosUrl;
+    const finalSourceUrl = normalizedCosUrl || displayUrl;
+
+    if (!displayUrl || !finalSourceUrl) {
+      throw new Error("任务已完成，但未返回图片地址");
+    }
+
+    const imageId = `${Date.now()}-0`;
+
+    preloadImage(displayUrl);
+    preloadImage(finalSourceUrl);
+
+    setGeneratedImages([
+      {
+        id: imageId,
+        url: displayUrl,
+        sourceUrl: finalSourceUrl,
+        prompt: sourcePrompt,
+        isLoaded: false,
+      },
+    ]);
+
+    // success 先展示 preview，再在后台加载并替换为 cos。
+    if (
+      normalizedPreviewUrl &&
+      normalizedCosUrl &&
+      normalizedPreviewUrl !== normalizedCosUrl &&
+      typeof window !== "undefined"
+    ) {
+      const highQualityImage = new window.Image();
+
+      highQualityImage.decoding = "async";
+      highQualityImage.src = normalizedCosUrl;
+      highQualityImage.onload = () => {
+        if (!isMountedRef.current || bananaTaskRunIdRef.current !== runId) {
+          return;
+        }
+
+        setGeneratedImages((prev) =>
+          prev.map((item) =>
+            item.id === imageId
+              ? { ...item, url: normalizedCosUrl, sourceUrl: normalizedCosUrl }
+              : item,
+          ),
+        );
+      };
+    }
+
+    syncUserProfile();
+
+    addToast({
+      title: "生成成功",
+      description: "图片已生成完成",
+      color: "success",
+    });
+  };
+
+  const subscribeTask = (
+    ssePath: string,
+    userToken: string,
+    onEvent: (eventName: string, data: unknown) => void,
+  ) => {
+    return bananaSubscribeTask(ssePath, userToken, onEvent);
+  };
+
+  const waitBananaTaskBySSE = async (
+    taskMeta: BananaTaskMeta,
+    userToken: string,
+    runId: number,
+  ): Promise<BananaTaskPayload> => {
+    const ssePath = taskMeta.ssePath;
+
+    if (!ssePath) {
+      throw new Error("缺少 SSE 地址");
+    }
+
+    return new Promise<BananaTaskPayload>((resolve, reject) => {
+      let settled = false;
+      let hasFirstEvent = false;
+      let timeoutId: number | null = null;
+
+      const finishResolve = (taskPayload: BananaTaskPayload) => {
+        if (settled) return;
+        settled = true;
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        resolve(taskPayload);
+      };
+      const finishReject = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        reject(error);
+      };
+
+      timeoutId = window.setTimeout(() => {
+        if (settled || hasFirstEvent) return;
+        finishReject(createSseTimeoutError());
+      }, BANANA_SSE_FALLBACK_DELAY_MS);
+
+      const { stop, promise } = subscribeTask(
+        ssePath,
+        userToken,
+        (eventName, rawData) => {
+          if (bananaTaskRunIdRef.current !== runId) return;
+          const taskPayload = extractBananaTaskPayload(rawData);
+
+          if (!taskPayload) return;
+
+          hasFirstEvent = true;
+          const normalizedEvent = eventName?.toLowerCase();
+          const status =
+            normalizedEvent === "task_success"
+              ? "success"
+              : normalizedEvent === "task_failed"
+                ? "failed"
+                : normalizedEvent === "ping"
+                  ? "running"
+                  : normalizeBananaStatus(taskPayload.status);
+
+          setBananaTaskStatus(status);
+
+          if (!BANANA_TERMINAL_STATUS.has(status)) {
+            return;
+          }
+
+          stop();
+
+          if (status === "failed") {
+            const errorMessage = taskPayload.message || "生成失败，请重试";
+
+            finishReject(createTaskFailedError(errorMessage));
+
+            return;
+          }
+
+          finishResolve(taskPayload);
+        },
+      );
+
+      bananaTaskTransportRef.current = stop;
+
+      promise
+        .then(() => {
+          if (settled) return;
+          finishReject(new Error("SSE 连接已关闭"));
+        })
+        .catch((error: unknown) => {
+          if (settled) return;
+          finishReject(
+            createErrorFromUnknown(error, "SSE 连接失败，准备降级轮询"),
+          );
+        });
+    });
+  };
+
+  const waitBananaTaskByPolling = async (
+    taskMeta: BananaTaskMeta,
+    runId: number,
+  ): Promise<BananaTaskPayload> => {
+    return new Promise<BananaTaskPayload>((resolve, reject) => {
+      let settled = false;
+      let inFlight = false;
+      let timerId: number | null = null;
+
+      const stop = () => {
+        if (timerId !== null) {
+          window.clearInterval(timerId);
+          timerId = null;
+        }
+      };
+      const finishResolve = (taskPayload: BananaTaskPayload) => {
+        if (settled) return;
+        settled = true;
+        stop();
+        resolve(taskPayload);
+      };
+      const finishReject = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        stop();
+        reject(error);
+      };
+      const pollOnce = async () => {
+        if (settled || inFlight || bananaTaskRunIdRef.current !== runId) {
+          return;
+        }
+        inFlight = true;
+
+        try {
+          const response = await bananaQueryImage(taskMeta.queryPath);
+          const taskPayload = extractBananaTaskPayload(response);
+
+          if (!taskPayload) {
+            throw new Error("轮询返回数据格式错误");
+          }
+
+          const status = normalizeBananaStatus(taskPayload.status);
+
+          setBananaTaskStatus(status);
+
+          if (!BANANA_TERMINAL_STATUS.has(status)) {
+            return;
+          }
+
+          if (status === "failed") {
+            const errorMessage = taskPayload.message || "生成失败，请重试";
+
+            finishReject(new Error(errorMessage));
+
+            return;
+          }
+
+          finishResolve(taskPayload);
+        } catch (error: unknown) {
+          finishReject(createErrorFromUnknown(error, "轮询任务失败"));
+        } finally {
+          inFlight = false;
+        }
+      };
+
+      bananaTaskTransportRef.current = stop;
+      timerId = window.setInterval(() => {
+        void pollOnce();
+      }, BANANA_POLL_INTERVAL_MS);
+      void pollOnce();
+    });
+  };
+
+  const runBananaTaskFlow = async (
+    taskMeta: BananaTaskMeta,
+    sourcePrompt: string,
+    options?: {
+      skipPersist?: boolean;
+      initialStatus?: string;
+    },
+  ) => {
+    stopBananaTaskTransport(true);
+    const runId = bananaTaskRunIdRef.current;
+
+    setBananaTaskId(taskMeta.taskId);
+    setBananaTaskStatus(
+      options?.initialStatus
+        ? normalizeBananaStatus(options.initialStatus)
+        : "pending",
+    );
+
+    if (!options?.skipPersist) {
+      saveBananaTaskToStorage({
+        ...taskMeta,
+        prompt: sourcePrompt,
+      });
+    }
+
+    if (!token) {
+      throw new Error("登录状态已失效，请重新登录");
+    }
+
+    try {
+      let taskResult: BananaTaskPayload;
+
+      if (taskMeta.ssePath) {
+        try {
+          taskResult = await waitBananaTaskBySSE(taskMeta, token, runId);
+        } catch (sseError: unknown) {
+          if (bananaTaskRunIdRef.current !== runId) return;
+          if (isAbortError(sseError)) return;
+          if (isTaskFailedError(sseError)) {
+            throw sseError;
+          }
+
+          if (!isSseTimeoutError(sseError)) {
+            await new Promise<void>((resolve) => {
+              window.setTimeout(resolve, BANANA_SSE_FALLBACK_DELAY_MS);
+            });
+          }
+
+          taskResult = await waitBananaTaskByPolling(taskMeta, runId);
+        }
+      } else {
+        taskResult = await waitBananaTaskByPolling(taskMeta, runId);
+      }
+
+      if (bananaTaskRunIdRef.current !== runId) return;
+
+      clearBananaTaskFromStorage();
+      setBananaTaskStatus("success");
+      applyBananaSuccessResult(taskResult, sourcePrompt, runId);
+      setPrompt("");
+    } catch (error: unknown) {
+      if (bananaTaskRunIdRef.current !== runId) return;
+      if (isAbortError(error)) return;
+
+      clearBananaTaskFromStorage();
+      setBananaTaskStatus("failed");
+
+      throw createErrorFromUnknown(error, "任务执行失败");
+    } finally {
+      if (bananaTaskRunIdRef.current === runId) {
+        stopBananaTaskTransport(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!hydrated || !token) return;
+
+    const persistedTask = readBananaTaskFromStorage();
+
+    if (!persistedTask) return;
+
+    const resumeTask = async () => {
+      setGeneratedImages([]);
+      setPreviewImage(null);
+      setIsGenerating(true);
+      setLoadingPlaceholders(1);
+
+      try {
+        const latestResponse = await bananaQueryImage(persistedTask.queryPath);
+        const latestTask = latestResponse.data;
+        const normalizedStatus = normalizeBananaStatus(latestTask?.status);
+
+        if (normalizedStatus === "success") {
+          clearBananaTaskFromStorage();
+          setBananaTaskStatus("success");
+          setBananaTaskId(persistedTask.taskId);
+          applyBananaSuccessResult(latestTask, persistedTask.prompt, 0);
+
+          return;
+        }
+
+        if (normalizedStatus === "failed") {
+          clearBananaTaskFromStorage();
+          setBananaTaskStatus("failed");
+          throw new Error(latestResponse.message || "历史任务已失败");
+        }
+
+        await runBananaTaskFlow(
+          {
+            taskId: persistedTask.taskId,
+            queryPath: persistedTask.queryPath,
+            ssePath: persistedTask.ssePath,
+          },
+          persistedTask.prompt,
+          {
+            skipPersist: true,
+            initialStatus: latestTask?.status,
+          },
+        );
+      } catch (error: unknown) {
+        const finalError = createErrorFromUnknown(error, "恢复任务失败");
+
+        console.error("恢复 Banana 任务失败:", finalError);
+
+        if (!isMountedRef.current) return;
+        if (
+          (error as { response?: { status?: number } })?.response?.status ===
+            401 ||
+          (error as { response?: { status?: number } })?.response?.status ===
+            409
+        ) {
+          return;
+        }
+
+        setErrorMessage(finalError.message);
+        setIsErrorModalOpen(true);
+      } finally {
+        if (!isMountedRef.current) return;
+        setIsGenerating(false);
+        setLoadingPlaceholders(0);
+      }
+    };
+
+    void resumeTask();
+  }, [hydrated, token]);
 
   /**
    * 处理生成图像
@@ -405,6 +1069,10 @@ const CreateNew: React.FC = () => {
     setPreviewImage(null);
     setIsGenerating(true);
     setLoadingPlaceholders(1);
+    setBananaTaskStatus(null);
+    setBananaTaskId(null);
+    stopBananaTaskTransport(true);
+    clearBananaTaskFromStorage();
 
     try {
       const selectedRatio = ASPECT_RATIOS.find(
@@ -430,62 +1098,39 @@ const CreateNew: React.FC = () => {
         const isNanoBanana = !isGPTModel;
 
         if (isNanoBanana) {
-          // Nano Banana 系列使用专用接口，创建任务后轮询 queryPath 获取最终图片
+          // Nano Banana 系列：提交仅创建任务，再用 SSE + 轮询跟踪状态
           const modelValue = selectedModel;
+          const idempotencyKey = createIdempotencyKey();
 
           const response = await bananaCreateImage(
             modelValue,
             prompt,
             selectedAspectRatio,
             "image-to-image",
+            idempotencyKey,
             inputImageUrls,
           );
 
-          if (!response.success) {
-            setErrorMessage(response.message || "生成失败，请重试");
+          const taskMeta = readBananaTaskMetaFromCreateResponse(response);
+
+          if (!taskMeta) {
+            if ((response as { code?: number })?.code === 202) {
+              addToast({
+                title: "任务已受理",
+                description: "正在等待任务状态回传",
+                color: "primary",
+              });
+
+              return;
+            }
+
+            setErrorMessage(response.message || "任务创建失败，请重试");
             setIsErrorModalOpen(true);
 
             return;
           }
 
-          const taskId = response.data?.upload?.taskId;
-          const queryPath = response.data?.upload?.queryPath;
-
-          if (!taskId || !queryPath) {
-            setErrorMessage("任务信息缺失，请重试");
-            setIsErrorModalOpen(true);
-
-            return;
-          }
-
-          const bananaResult = await waitForBananaImage(taskId, queryPath);
-          const normalizedFinalUrl = normalizeImageURL(bananaResult.cosUrl);
-          const normalizedPreviewUrl = bananaResult.previewUrl
-            ? normalizeImageURL(bananaResult.previewUrl)
-            : undefined;
-          const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
-
-          preloadImage(displayUrl);
-          preloadImage(normalizedFinalUrl);
-
-          const newImage: GeneratedImage = {
-            id: `${Date.now()}-0`,
-            url: displayUrl,
-            sourceUrl: normalizedFinalUrl,
-            prompt: prompt,
-            isLoaded: false,
-          };
-
-          setGeneratedImages([newImage]);
-          syncUserProfile();
-
-          addToast({
-            title: "生成成功",
-            description: "图片已生成完成",
-            color: "success",
-          });
-
-          setPrompt("");
+          await runBananaTaskFlow(taskMeta, prompt);
         } else {
           // 非 Nano Banana 模型：调用图生图接口后，按 taskId 轮询任务结果
           const response = await imageToImage(
@@ -494,44 +1139,17 @@ const CreateNew: React.FC = () => {
             sizeValue,
           );
 
-          if (!response.success) {
-            setErrorMessage(response.message || "生成失败，请重试");
-            setIsErrorModalOpen(true);
+          const taskMeta = readBananaTaskMetaFromCreateResponse(response);
+
+          if (taskMeta) {
+            await runBananaTaskFlow(taskMeta, prompt);
 
             return;
           }
 
-          const taskId = response.data?.upload?.taskId;
-
-          if (taskId) {
-            const taskResult = await waitForTextToImageTask(taskId);
-            const normalizedFinalUrl = normalizeImageURL(taskResult.cosUrl);
-            const normalizedPreviewUrl = taskResult.previewUrl
-              ? normalizeImageURL(taskResult.previewUrl)
-              : undefined;
-            const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
-
-            preloadImage(displayUrl);
-            preloadImage(normalizedFinalUrl);
-
-            const newImage: GeneratedImage = {
-              id: `${Date.now()}-0`,
-              url: displayUrl,
-              sourceUrl: normalizedFinalUrl,
-              prompt: prompt,
-              isLoaded: false,
-            };
-
-            setGeneratedImages([newImage]);
-            syncUserProfile();
-
-            addToast({
-              title: "生成成功",
-              description: "图片已生成完成",
-              color: "success",
-            });
-
-            setPrompt("");
+          if (!response.success) {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
 
             return;
           }
@@ -584,103 +1202,51 @@ const CreateNew: React.FC = () => {
         const isNanoBanana = !isGPTModel;
 
         if (isNanoBanana) {
-          // 调用 Nano Banana 专用接口，创建任务后轮询 queryPath 获取最终图片
+          // Nano Banana 系列：提交仅创建任务，再用 SSE + 轮询跟踪状态
+          const idempotencyKey = createIdempotencyKey();
           const response = await bananaCreateImage(
             selectedModel,
             prompt,
             selectedAspectRatio,
             "text-to-image",
+            idempotencyKey,
           );
 
-          if (!response.success) {
-            setErrorMessage(response.message || "生成失败，请重试");
+          const taskMeta = readBananaTaskMetaFromCreateResponse(response);
+
+          if (!taskMeta) {
+            if ((response as { code?: number })?.code === 202) {
+              addToast({
+                title: "任务已受理",
+                description: "正在等待任务状态回传",
+                color: "primary",
+              });
+
+              return;
+            }
+
+            setErrorMessage(response.message || "任务创建失败，请重试");
             setIsErrorModalOpen(true);
 
             return;
           }
 
-          const taskId = response.data?.upload?.taskId;
-          const queryPath = response.data?.upload?.queryPath;
-
-          if (!taskId || !queryPath) {
-            setErrorMessage("任务信息缺失，请重试");
-            setIsErrorModalOpen(true);
-
-            return;
-          }
-
-          const bananaResult = await waitForBananaImage(taskId, queryPath);
-          const normalizedFinalUrl = normalizeImageURL(bananaResult.cosUrl);
-          const normalizedPreviewUrl = bananaResult.previewUrl
-            ? normalizeImageURL(bananaResult.previewUrl)
-            : undefined;
-          const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
-
-          preloadImage(displayUrl);
-          preloadImage(normalizedFinalUrl);
-
-          const newImage: GeneratedImage = {
-            id: `${Date.now()}-0`,
-            url: displayUrl,
-            sourceUrl: normalizedFinalUrl,
-            prompt: prompt,
-            isLoaded: false,
-          };
-
-          setGeneratedImages([newImage]);
-          syncUserProfile();
-
-          // 显示成功提示
-          addToast({
-            title: "生成成功",
-            description: "图片已生成完成",
-            color: "success",
-          });
-
-          // 清空提示词
-          setPrompt("");
+          await runBananaTaskFlow(taskMeta, prompt);
         } else {
           // 非 Nano Banana 模型：调用文生图接口后，按 taskId 轮询任务结果
           const response = await generateImage(prompt, sizeValue);
 
-          if (!response.success) {
-            setErrorMessage(response.message || "生成失败，请重试");
-            setIsErrorModalOpen(true);
+          const taskMeta = readBananaTaskMetaFromCreateResponse(response);
+
+          if (taskMeta) {
+            await runBananaTaskFlow(taskMeta, prompt);
 
             return;
           }
 
-          const taskId = response.data?.upload?.taskId;
-
-          if (taskId) {
-            const taskResult = await waitForTextToImageTask(taskId);
-            const normalizedFinalUrl = normalizeImageURL(taskResult.cosUrl);
-            const normalizedPreviewUrl = taskResult.previewUrl
-              ? normalizeImageURL(taskResult.previewUrl)
-              : undefined;
-            const displayUrl = normalizedPreviewUrl || normalizedFinalUrl;
-
-            preloadImage(displayUrl);
-            preloadImage(normalizedFinalUrl);
-
-            const newImage: GeneratedImage = {
-              id: `${Date.now()}-0`,
-              url: displayUrl,
-              sourceUrl: normalizedFinalUrl,
-              prompt: prompt,
-              isLoaded: false,
-            };
-
-            setGeneratedImages([newImage]);
-            syncUserProfile();
-
-            addToast({
-              title: "生成成功",
-              description: "图片已生成完成",
-              color: "success",
-            });
-
-            setPrompt("");
+          if (!response.success) {
+            setErrorMessage(response.message || "生成失败，请重试");
+            setIsErrorModalOpen(true);
 
             return;
           }
@@ -1261,7 +1827,13 @@ const CreateNew: React.FC = () => {
                   startContent={!isGenerating && <SparklesIcon size={20} />}
                   onPress={handleGenerate}
                 >
-                  {isGenerating ? "创作中..." : "开始创作"}
+                  {isGenerating
+                    ? bananaTaskStatus === "pending"
+                      ? "创建任务中..."
+                      : bananaStatusLabel
+                        ? `任务${bananaStatusLabel}...`
+                        : "创作中..."
+                    : "创建任务"}
                   {!isGenerating && (
                     <span className="text-xs opacity-80 ml-1">
                       (消耗 {selectedModelData?.consume_points ?? "-"} 币)
@@ -1327,7 +1899,9 @@ const CreateNew: React.FC = () => {
                                   {`正在使用 ${currentModelName} 创作您的图像`}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                  这通常需要 1-3 分钟，具体取决于图像复杂度
+                                  {bananaStatusLabel
+                                    ? `任务状态：${bananaStatusLabel}`
+                                    : "这通常需要 1-3 分钟，具体取决于图像复杂度"}
                                 </p>
                               </div>
                             </div>

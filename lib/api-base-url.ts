@@ -20,6 +20,10 @@ export const getApiBaseURL = () => {
 };
 
 export const normalizeApiPath = (path: string) => {
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
   const baseURL = getApiBaseURL();
   const normalizedPath = ensureLeadingSlash(path);
 

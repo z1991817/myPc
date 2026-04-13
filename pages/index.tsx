@@ -127,6 +127,30 @@ function formatStatValue(
   return `${displayValue}${suffix}`;
 }
 
+/**
+ * 首页画廊卡片预览图优先级：
+ * 1. 后端 preview_url / previewUrl
+ * 2. cos_url（若未带处理参数则拼接轻量预览参数）
+ */
+function resolveGalleryPreviewURL(item: GalleryImageItem): string {
+  const normalizedCosUrl = normalizeImageURL(item.cos_url);
+  const rawPreviewUrl = item.preview_url || item.previewUrl;
+
+  if (rawPreviewUrl) {
+    return normalizeImageURL(rawPreviewUrl);
+  }
+
+  if (!normalizedCosUrl || normalizedCosUrl.includes("imageMogr2/")) {
+    return normalizedCosUrl;
+  }
+
+  if (normalizedCosUrl.includes("?")) {
+    return normalizedCosUrl;
+  }
+
+  return `${normalizedCosUrl}?imageMogr2/thumbnail/1024x>/strip/quality/75/format/webp`;
+}
+
 /** 通用滚动显隐组件，统一处理首页滚动动画 */
 function Reveal({ children, className, delay = 0, amount = 0.2 }: RevealProps) {
   const prefersReducedMotion = useReducedMotion();
@@ -270,6 +294,7 @@ export default function IndexNewPage({
           const normalizedGalleryImages = res.data.list.map((item) => ({
             ...item,
             cos_url: normalizeImageURL(item.cos_url),
+            preview_url: resolveGalleryPreviewURL(item),
           }));
 
           setGalleryImages(normalizedGalleryImages);

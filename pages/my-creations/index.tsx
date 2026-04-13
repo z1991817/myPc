@@ -36,6 +36,30 @@ interface CreationCardProps {
 }
 
 /**
+ * 生成卡片预览图 URL：
+ * 1. 优先使用后端返回 preview_url/previewUrl
+ * 2. 若无预览字段且 cos_url 还未带 imageMogr2 参数，则补一条轻量预览参数
+ */
+const resolveCreationPreviewURL = (item: MyCreationItem): string => {
+  const normalizedCosUrl = normalizeImageURL(item.cos_url);
+  const rawPreviewUrl = item.preview_url || item.previewUrl;
+
+  if (rawPreviewUrl) {
+    return normalizeImageURL(rawPreviewUrl);
+  }
+
+  if (!normalizedCosUrl || normalizedCosUrl.includes("imageMogr2/")) {
+    return normalizedCosUrl;
+  }
+
+  if (normalizedCosUrl.includes("?")) {
+    return normalizedCosUrl;
+  }
+
+  return `${normalizedCosUrl}?imageMogr2/thumbnail/1024x>/strip/quality/75/format/webp`;
+};
+
+/**
  * 创作卡片组件 - 支持懒加载和悬停放大效果
  */
 const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
@@ -47,6 +71,7 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const previewImageUrl = resolveCreationPreviewURL(item);
 
   /* 懒加载：IntersectionObserver */
   useEffect(() => {
@@ -165,12 +190,13 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
             {isVisible && (
               <Image
                 fill
+                unoptimized
                 alt={item.prompt}
                 className={`w-full h-full object-cover transition-transform duration-300 hover:scale-110 ${
                   isLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                src={item.cos_url}
+                src={previewImageUrl}
                 onLoad={() => setIsLoaded(true)}
               />
             )}
@@ -313,6 +339,7 @@ export default function MyCreationsPage() {
         const normalizedList = res.data.list.map((item) => ({
           ...item,
           cos_url: normalizeImageURL(item.cos_url),
+          preview_url: resolveCreationPreviewURL(item),
         }));
 
         setList((prev) =>
