@@ -63,7 +63,7 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           command_timeout: 30m
-          request_pty: true
+          request_pty: false
           script: |
             set -e
 
@@ -88,6 +88,12 @@ jobs:
             load_profile "$HOME/.profile"
 
             export PATH="$HOME/.local/share/pnpm:/usr/local/bin:/usr/bin:$PATH"
+            export CI=true
+            export GIT_TERMINAL_PROMPT=0
+            export GIT_ASKPASS=/bin/echo
+            export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=10"
+            export PAGER=cat
+            export NEXT_TELEMETRY_DISABLED=1
 
             echo "[deploy] checking runtime"
             command -v node || { echo "[deploy] node not found"; exit 1; }
@@ -110,7 +116,8 @@ jobs:
             fi
 
             echo "[deploy] syncing git branch $BRANCH"
-            git fetch origin "$BRANCH"
+            echo "[deploy] git remote: $(git remote get-url origin)"
+            timeout 120 git fetch --prune origin "$BRANCH"
             git switch "$BRANCH" || git switch -c "$BRANCH" --track "origin/$BRANCH"
             git reset --hard "origin/$BRANCH"
             git clean -fd
@@ -122,7 +129,11 @@ jobs:
             rm -rf .next
 
             echo "[deploy] building app"
-            pnpm build
+            echo "[deploy] system resources before build"
+            free -h || true
+            df -h || true
+            nproc || true
+            NODE_OPTIONS=--max-old-space-size=1536 pnpm exec next build --no-lint
 
             echo "[deploy] clearing nginx proxy cache"
             rm -rf /www/server/nginx/proxy_cache_dir/*
