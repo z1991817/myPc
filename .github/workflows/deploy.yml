@@ -102,11 +102,18 @@ jobs:
             pwd
 
             BRANCH="${{ github.ref_name }}"
+            if [ -z "$BRANCH" ]; then
+              BRANCH="$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')"
+            fi
+            if [ -z "$BRANCH" ]; then
+              BRANCH="master"
+            fi
 
             echo "[deploy] syncing git branch $BRANCH"
             git fetch origin "$BRANCH"
             git switch "$BRANCH" || git switch -c "$BRANCH" --track "origin/$BRANCH"
-            git pull origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            git clean -fd
 
             echo "[deploy] installing dependencies"
             pnpm install --frozen-lockfile
