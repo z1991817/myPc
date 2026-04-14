@@ -471,7 +471,7 @@ export default function IndexNewPage({
                 >
                   浏览画廊
                 </Button>
-                <Button
+                {/* <Button
                   as={NextLink}
                   className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 text-base font-semibold text-white shadow-lg shadow-blue-500/25"
                   href="/createNew"
@@ -479,7 +479,7 @@ export default function IndexNewPage({
                   size="lg"
                 >
                   测试按钮
-                </Button>
+                </Button> */}
               </div>
             </Reveal>
 
