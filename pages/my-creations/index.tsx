@@ -155,7 +155,7 @@ const CreationCard: React.FC<CreationCardProps> = ({ item, onDelete }) => {
         generationType: item.generation_type,
       }),
     );
-    router.push("/createNew");
+    router.push("/create");
   };
 
   /** 删除 - 弹出确认框 */

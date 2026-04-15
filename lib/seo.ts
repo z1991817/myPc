@@ -29,7 +29,7 @@ const pageSeoByPathname: Record<string, SeoMeta> = {
     ],
     canonicalPath: "/gallery",
   },
-  "/createNew": {
+  "/create": {
     title: "AI图像生成器 - 专业智能绘画平台 | Nano banana图像生成器",
     description:
       "使用 ArtImg 在线生成 AI 图片，支持写实人像、动漫插画、Logo 设计、商业视觉、多语言文字排版、批量生成与商用授权。",
@@ -41,7 +41,7 @@ const pageSeoByPathname: Record<string, SeoMeta> = {
       "AI logo设计",
       "AI角色一致性",
     ],
-    canonicalPath: "/createNew",
+    canonicalPath: "/create",
   },
   "/pricing": {
     title: "价格方案",

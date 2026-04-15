@@ -452,7 +452,7 @@ export default function IndexNewPage({
                 <Button
                   as={NextLink}
                   className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 text-base font-semibold text-white shadow-lg shadow-blue-500/25"
-                  href="/createNew"
+                  href="/create"
                   radius="full"
                   size="lg"
                 >
@@ -474,7 +474,7 @@ export default function IndexNewPage({
                 {/* <Button
                   as={NextLink}
                   className="bg-gradient-to-r from-blue-500 to-purple-500 px-8 text-base font-semibold text-white shadow-lg shadow-blue-500/25"
-                  href="/createNew"
+                  href="/create"
                   radius="full"
                   size="lg"
                 >

@@ -136,13 +136,25 @@ jobs:
             NODE_OPTIONS=--max-old-space-size=1536 pnpm exec next build --no-lint
 
             echo "[deploy] clearing nginx proxy cache"
-            rm -rf /www/server/nginx/proxy_cache_dir/*
+            if [ -d /www/server/nginx/proxy_cache_dir ]; then
+              rm -rf /www/server/nginx/proxy_cache_dir/* || {
+                echo "[deploy] warning: skip cache cleanup (permission denied)"
+              }
+            fi
 
             echo "[deploy] restarting pm2 app"
             pm2 restart next-pages-template || pm2 start ecosystem.config.cjs --only next-pages-template
             pm2 save
 
             echo "[deploy] reloading nginx"
-            nginx -s reload
+            if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
+              sudo -n nginx -s reload || sudo -n systemctl reload nginx || {
+                echo "[deploy] warning: nginx reload failed"
+              }
+            else
+              nginx -s reload || {
+                echo "[deploy] warning: skip nginx reload (no sudo permission)"
+              }
+            fi
 
             echo "[deploy] deployment completed"

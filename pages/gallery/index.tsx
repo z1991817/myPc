@@ -197,7 +197,7 @@ export default function GalleryPage() {
           generationType: selectedImage.generation_type,
         }),
       );
-      router.push("/createNew");
+      router.push("/create");
     }
   };
 
@@ -214,7 +214,7 @@ export default function GalleryPage() {
           generationType: "image-to-image",
         }),
       );
-      router.push("/createNew");
+      router.push("/create");
     }
   };
 

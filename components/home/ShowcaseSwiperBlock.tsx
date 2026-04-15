@@ -168,7 +168,7 @@ export default function ShowcaseSwiperBlock() {
                     <Button
                       as={NextLink}
                       className="border-white/15 text-white/75 hover:bg-white/5"
-                      href="/createNew"
+                      href="/create"
                       radius="full"
                       size="md"
                       variant="bordered"

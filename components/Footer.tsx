@@ -40,7 +40,7 @@ const Footer: React.FC = () => {
                 <Link
                   as={NextLink}
                   className="text-slate-400 transition-colors hover:text-blue-400"
-                  href="/createNew"
+                  href="/create"
                 >
                   文字生图
                 </Link>
@@ -49,7 +49,7 @@ const Footer: React.FC = () => {
                 <Link
                   as={NextLink}
                   className="text-slate-400 transition-colors hover:text-blue-400"
-                  href="/createNew"
+                  href="/create"
                 >
                   图片生图
                 </Link>

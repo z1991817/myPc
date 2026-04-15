@@ -102,16 +102,27 @@ const buildApiRequestUrl = (path: string) => {
 };
 
 // 模型列表类型
+export interface ModelSkuItem {
+  id?: number | string;
+  name?: string;
+  sku_name?: string;
+  sku_code?: string;
+  image_size?: string;
+  resolution?: string;
+  consume_points: number;
+}
+
 export interface ModelItem {
   id: number;
   name: string;
   model_key: string;
   manufacturer: string;
   description: string;
-  aspect_ratio: string;
-  aspect_ratios: string[];
+  aspect_ratio?: string;
+  aspect_ratios?: string[];
   status: number;
   consume_points: number;
+  skus?: ModelSkuItem[];
   created_at: string;
   updated_at: string;
 }
@@ -162,11 +173,18 @@ export const textToImage = async (
 };
 
 // 新的图片生成接口（调用真实后端接口）
+export interface GenerateImagePayload {
+  prompt: string;
+  model: string;
+  size: string;
+  consumePoints: number;
+  skuCode: string;
+}
+
 export const generateImage = async (
-  prompt: string,
-  size: string,
+  payload: GenerateImagePayload,
 ): Promise<GenerateImageResponse> => {
-  return request.post("/app/text-to-image", { prompt, size });
+  return request.post("/app/text-to-image", payload);
 };
 
 // 图生图响应类型（新格式）
@@ -213,12 +231,14 @@ export interface ImageToImageResponse {
 }
 
 // 图生图接口
+export interface ImageToImagePayload extends GenerateImagePayload {
+  imageUrl: string[];
+}
+
 export const imageToImage = async (
-  prompt: string,
-  imageUrl: string[],
-  size?: string,
+  payload: ImageToImagePayload,
 ): Promise<ImageToImageResponse> => {
-  return request.post("/app/image-to-image", { prompt, imageUrl, size });
+  return request.post("/app/image-to-image", payload);
 };
 
 // Banana 系列图片生成响应类型
@@ -270,6 +290,8 @@ export interface TextToImageTaskResponse {
  * @param model 模型 value（如 gemini-3.1-flash-image-preview）
  * @param prompt 提示词
  * @param aspectRatio 图片比例（如 "1:1"、"16:9"）
+ * @param imageSize 当前选中的 SKU 值（如 1K、2K）
+ * @param consumePoints 当前选中 SKU 的消耗积分
  * @param type 生成类型：text-to-image 或 image-to-image
  * @param imageUrls 参考图片URL数组（仅 image-to-image 时需要）
  */
@@ -277,6 +299,8 @@ export const bananaCreateImage = async (
   model: string,
   prompt: string,
   aspectRatio: string,
+  imageSize: string,
+  consumePoints: number,
   type: "text-to-image" | "image-to-image",
   idempotencyKey: string,
   imageUrls?: string[],
@@ -285,6 +309,8 @@ export const bananaCreateImage = async (
     model,
     prompt,
     aspectRatio,
+    imageSize,
+    consumePoints,
     type,
     idempotencyKey,
     ...(imageUrls && imageUrls.length > 0 ? { imageUrls } : {}),

@@ -1,4 +1,4 @@
-import type { ModelItem } from "@/api/images";
+import type { ModelItem, ModelSkuItem } from "@/api/images";
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import Image from "next/image";
@@ -99,7 +99,7 @@ const getModelIcon = (manufacturer: string): string => {
  * GPT 模型比例值使用分辨率，Banana 模型直接使用比例字符串
  */
 const buildAspectRatioOptions = (
-  aspectRatios: string[],
+  aspectRatios: string[] = [],
   isGPT: boolean,
 ): AspectRatioOption[] => {
   return aspectRatios.map((ratio) => ({
@@ -108,6 +108,51 @@ const buildAspectRatioOptions = (
     ratio,
     value: isGPT ? (GPT_RESOLUTION_MAP[ratio] ?? ratio) : ratio,
   }));
+};
+
+/**
+ * 生成 SKU 的稳定 key（优先用 id，没有 id 时回退为 name + index）
+ */
+const getSkuKey = (sku: ModelSkuItem, index: number): string => {
+  if (sku.id !== undefined && sku.id !== null) {
+    return String(sku.id);
+  }
+
+  if (sku.sku_code) {
+    return sku.sku_code;
+  }
+
+  return `${sku.sku_name || sku.name || sku.image_size || sku.resolution || "sku"}-${index}`;
+};
+
+/**
+ * 获取 SKU 展示名称，兼容新旧字段
+ */
+const getSkuDisplayName = (sku: ModelSkuItem, index: number): string => {
+  const displayName =
+    sku.name ||
+    sku.sku_name ||
+    sku.image_size ||
+    sku.resolution ||
+    sku.sku_code;
+
+  return displayName && displayName.trim()
+    ? displayName
+    : `分辨率 ${index + 1}`;
+};
+
+/**
+ * 获取 SKU 真实值（用于接口传参）
+ */
+const getSkuValue = (sku: ModelSkuItem): string => {
+  const skuValue =
+    sku.image_size ||
+    sku.sku_name ||
+    sku.name ||
+    sku.sku_code ||
+    sku.resolution;
+
+  return skuValue && skuValue.trim() ? skuValue : "";
 };
 
 /**
@@ -219,6 +264,7 @@ const readBananaTaskMetaFromCreateResponse = (
 
   const responseData = response.data;
   const responseResult = response.result;
+
   if (isRecord(responseData) && isRecord(responseData.upload)) {
     const taskId =
       readString(responseData.taskId) ||
@@ -325,6 +371,7 @@ const CreateNew: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   // selectedModel 存储 model_key（来自 API）
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedSkuKey, setSelectedSkuKey] = useState("");
   const [models, setModels] = useState<ModelItem[]>([]);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [loadingPlaceholders, setLoadingPlaceholders] = useState<number>(0);
@@ -364,6 +411,23 @@ const CreateNew: React.FC = () => {
 
     return buildAspectRatioOptions(selectedModelData.aspect_ratios, isGPTModel);
   }, [selectedModelData, isGPTModel]);
+  // 模型分辨率 SKU（如接口无 skus，保持为空）
+  const MODEL_SKUS = useMemo(
+    () => selectedModelData?.skus ?? [],
+    [selectedModelData],
+  );
+  const selectedSkuData = useMemo(() => {
+    if (MODEL_SKUS.length === 0) return null;
+    if (!selectedSkuKey) return MODEL_SKUS[0];
+
+    return (
+      MODEL_SKUS.find(
+        (sku, index) => getSkuKey(sku, index) === selectedSkuKey,
+      ) ?? MODEL_SKUS[0]
+    );
+  }, [MODEL_SKUS, selectedSkuKey]);
+  const currentConsumePoints =
+    selectedSkuData?.consume_points ?? selectedModelData?.consume_points;
   const currentModelName = selectedModelData?.name ?? "当前模型";
 
   // 切换模型时重置比例为第一个选项
@@ -371,6 +435,17 @@ const CreateNew: React.FC = () => {
     if (ASPECT_RATIOS.length > 0) {
       setSelectedAspectRatio(ASPECT_RATIOS[0].key);
     }
+  }, [selectedModel]);
+
+  // 切换模型时默认选中第一个 SKU
+  useEffect(() => {
+    if (MODEL_SKUS.length > 0) {
+      setSelectedSkuKey(getSkuKey(MODEL_SKUS[0], 0));
+
+      return;
+    }
+
+    setSelectedSkuKey("");
   }, [selectedModel]);
 
   // 拉取模型列表
@@ -451,7 +526,7 @@ const CreateNew: React.FC = () => {
 
         // 回显 model
         if (params.model) {
-          // 将 gallery 的 model 映射到 createNew 的 model
+          // 将 gallery 的 model 映射到 create 的 model
           const modelMap: Record<string, string> = {
             "GPT Image": "gpt-image-1.5",
             "Flux Pro": "flux-pro",
@@ -1079,6 +1154,9 @@ const CreateNew: React.FC = () => {
         (ratio) => ratio.key === selectedAspectRatio,
       );
       const sizeValue = selectedRatio?.value || "1024x1024";
+      const currentSkuValue = selectedSkuData
+        ? getSkuValue(selectedSkuData)
+        : "";
 
       // 判断是文生图还是图生图
       if (activeTab === "image-to-image") {
@@ -1106,6 +1184,8 @@ const CreateNew: React.FC = () => {
             modelValue,
             prompt,
             selectedAspectRatio,
+            currentSkuValue,
+            currentConsumePoints ?? 0,
             "image-to-image",
             idempotencyKey,
             inputImageUrls,
@@ -1133,11 +1213,14 @@ const CreateNew: React.FC = () => {
           await runBananaTaskFlow(taskMeta, prompt);
         } else {
           // 非 Nano Banana 模型：调用图生图接口后，按 taskId 轮询任务结果
-          const response = await imageToImage(
+          const response = await imageToImage({
             prompt,
-            inputImageUrls,
-            sizeValue,
-          );
+            model: selectedModel,
+            size: sizeValue,
+            consumePoints: currentConsumePoints ?? 0,
+            skuCode: "",
+            imageUrl: inputImageUrls,
+          });
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
 
@@ -1208,6 +1291,8 @@ const CreateNew: React.FC = () => {
             selectedModel,
             prompt,
             selectedAspectRatio,
+            currentSkuValue,
+            currentConsumePoints ?? 0,
             "text-to-image",
             idempotencyKey,
           );
@@ -1234,7 +1319,13 @@ const CreateNew: React.FC = () => {
           await runBananaTaskFlow(taskMeta, prompt);
         } else {
           // 非 Nano Banana 模型：调用文生图接口后，按 taskId 轮询任务结果
-          const response = await generateImage(prompt, sizeValue);
+          const response = await generateImage({
+            prompt,
+            model: selectedModel,
+            size: sizeValue,
+            consumePoints: currentConsumePoints ?? 0,
+            skuCode: "",
+          });
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
 
@@ -1817,6 +1908,38 @@ const CreateNew: React.FC = () => {
                   </div>
                 </div>
 
+                {/* 模型分辨率 SKU 选择（有 skus 才展示） */}
+                {MODEL_SKUS.length > 0 && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-3">
+                      图片分辨率
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {MODEL_SKUS.map((sku, index) => {
+                        const skuKey = getSkuKey(sku, index);
+                        const isSelected =
+                          (selectedSkuKey || getSkuKey(MODEL_SKUS[0], 0)) ===
+                          skuKey;
+
+                        return (
+                          <button
+                            key={skuKey}
+                            className={`flex items-center justify-center p-3 rounded-lg border-2 transition-all text-xs font-medium ${
+                              isSelected
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-default-200 bg-default-100 text-default-600 hover:border-primary/50"
+                            }`}
+                            type="button"
+                            onClick={() => setSelectedSkuKey(skuKey)}
+                          >
+                            {getSkuDisplayName(sku, index)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* 生成按钮 - 使用HeroUI Button组件 */}
                 <Button
                   className="w-full font-semibold bg-gradient-to-r from-primary to-secondary"
@@ -1836,7 +1959,7 @@ const CreateNew: React.FC = () => {
                     : "创建任务"}
                   {!isGenerating && (
                     <span className="text-xs opacity-80 ml-1">
-                      (消耗 {selectedModelData?.consume_points ?? "-"} 币)
+                      (消耗 {currentConsumePoints ?? "-"} 币)
                     </span>
                   )}
                 </Button>
