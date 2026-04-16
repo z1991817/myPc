@@ -38,7 +38,7 @@ interface CreationCardProps {
 /**
  * 生成卡片预览图 URL：
  * 1. 优先使用后端返回 preview_url/previewUrl
- * 2. 若无预览字段且 cos_url 还未带 imageMogr2 参数，则补一条轻量预览参数
+ * 2. 若无预览字段则直接回退 cos_url，避免前端拼接处理参数导致部分节点连接异常
  */
 const resolveCreationPreviewURL = (item: MyCreationItem): string => {
   const normalizedCosUrl = normalizeImageURL(item.cos_url);
@@ -48,15 +48,15 @@ const resolveCreationPreviewURL = (item: MyCreationItem): string => {
     return normalizeImageURL(rawPreviewUrl);
   }
 
-  if (!normalizedCosUrl || normalizedCosUrl.includes("imageMogr2/")) {
+  if (!normalizedCosUrl) {
     return normalizedCosUrl;
   }
 
-  if (normalizedCosUrl.includes("?")) {
-    return normalizedCosUrl;
-  }
-
-  return `${normalizedCosUrl}?imageMogr2/thumbnail/1024x>/strip/quality/75/format/webp`;
+  /**
+   * 线上出现过 imageMogr2 查询参数触发 net::ERR_CONNECTION_CLOSED 的情况，
+   * 因此前端不再自行拼接图片处理参数，统一回退原图。
+   */
+  return normalizedCosUrl;
 };
 
 /**

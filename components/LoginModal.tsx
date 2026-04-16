@@ -242,7 +242,7 @@ export default function LoginModal({
                       新用户奖励
                     </span>
                     <p className="text-sm font-bold text-white mt-1">
-                      获得 100 免费积分
+                      获得 200 免费积分
                     </p>
                   </div>
                 </div>
@@ -397,3 +397,4 @@ export default function LoginModal({
     </Modal>
   );
 }
+
