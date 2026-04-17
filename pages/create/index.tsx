@@ -177,6 +177,7 @@ const BANANA_SSE_FALLBACK_DELAY_MS = 5000;
 const BANANA_POLL_INTERVAL_MS = 3000;
 const IMAGE_TASK_POLL_INTERVAL_MS = 2000;
 const IMAGE_TASK_POLL_MAX_TIMES = 90;
+const PROMPT_MAX_LENGTH = 2000;
 
 type BananaTaskStatus =
   | "pending"
@@ -254,6 +255,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const readString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
+
+/**
+ * 限制提示词最大长度，避免输入与回填超限。
+ */
+const limitPromptLength = (value: string): string =>
+  value.slice(0, PROMPT_MAX_LENGTH);
 
 const readBananaTaskMetaFromCreateResponse = (
   response: unknown,
@@ -521,7 +528,7 @@ const CreateNew: React.FC = () => {
 
         // 回显 prompt
         if (params.prompt) {
-          setPrompt(params.prompt);
+          setPrompt(limitPromptLength(params.prompt));
         }
 
         // 回显 model
@@ -1522,7 +1529,7 @@ const CreateNew: React.FC = () => {
    * 将已生成图片对应的提示词回填到输入框，便于继续修改
    */
   const handleReusePrompt = (imagePrompt: string) => {
-    setPrompt(imagePrompt);
+    setPrompt(limitPromptLength(imagePrompt));
   };
 
   return (
@@ -1845,14 +1852,17 @@ const CreateNew: React.FC = () => {
                   </div>
                   <textarea
                     className="w-full bg-default-100 border-2 border-default-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-primary transition-colors"
+                    maxLength={PROMPT_MAX_LENGTH}
                     placeholder="描述你想要生成的图像..."
                     rows={4}
                     value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
+                    onChange={(e) =>
+                      setPrompt(limitPromptLength(e.target.value))
+                    }
                   />
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-default-500">
-                      {promptLength} / 4000
+                      {promptLength} / {PROMPT_MAX_LENGTH}
                     </span>
                   </div>
                 </div>
