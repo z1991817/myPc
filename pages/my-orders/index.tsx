@@ -54,6 +54,8 @@ const logTypeMap: Record<string, string> = {
   image_generate: "图片生成",
   text_to_image: "文生图",
   image_to_image: "图生图",
+  consume: "积分消费",
+  refund: "积分退款",
 };
 
 const formatNumber = (value?: string | number | null) => {

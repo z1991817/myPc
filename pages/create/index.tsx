@@ -82,6 +82,17 @@ const GPT_RESOLUTION_MAP: Record<string, string> = {
 };
 
 /**
+ * GPT 历史记录尺寸（分辨率）到比例的映射，用于继续编辑时回填。
+ */
+const GPT_SIZE_TO_RATIO_MAP: Record<string, string> = {
+  "1024x1024": "1:1",
+  "1024x1536": "2:3",
+  "1536x1024": "3:2",
+  "1024x1792": "9:16",
+  "1792x1024": "16:9",
+};
+
+/**
  * 根据 manufacturer 获取模型图标路径
  */
 const getModelIcon = (manufacturer: string): string => {
@@ -156,6 +167,88 @@ const getSkuValue = (sku: ModelSkuItem): string => {
 };
 
 /**
+ * 标准化尺寸/比例字符串，统一比较口径。
+ */
+const normalizeSizeToken = (value: string): string =>
+  value.trim().toLowerCase().replace(/\s+/g, "").replace(/×/g, "x");
+
+/**
+ * 根据继续编辑传入的 size 匹配比例 key。
+ * GPT: 先把分辨率映射到比例，再匹配；
+ * Banana: 直接按 size 匹配比例 key/value。
+ */
+const resolveAspectRatioKeyFromSize = (
+  sizeValue: string,
+  aspectRatioOptions: AspectRatioOption[],
+  isGPT: boolean,
+): string | null => {
+  const normalizedSize = normalizeSizeToken(sizeValue);
+
+  if (!normalizedSize || aspectRatioOptions.length === 0) {
+    return null;
+  }
+
+  if (isGPT) {
+    const mappedRatio = GPT_SIZE_TO_RATIO_MAP[normalizedSize];
+
+    if (mappedRatio) {
+      const matchedByMappedRatio = aspectRatioOptions.find(
+        (option) => normalizeSizeToken(option.key) === mappedRatio,
+      );
+
+      if (matchedByMappedRatio) {
+        return matchedByMappedRatio.key;
+      }
+    }
+  }
+
+  const directMatchedOption = aspectRatioOptions.find((option) => {
+    return (
+      normalizeSizeToken(option.key) === normalizedSize ||
+      normalizeSizeToken(option.value) === normalizedSize
+    );
+  });
+
+  return directMatchedOption?.key ?? null;
+};
+
+/**
+ * 根据继续编辑传入的 size 匹配 SKU key（主要用于 Banana 模型）。
+ */
+const resolveSkuKeyFromSize = (
+  sizeValue: string,
+  skus: ModelSkuItem[],
+): string | null => {
+  const normalizedSize = normalizeSizeToken(sizeValue);
+
+  if (!normalizedSize || skus.length === 0) {
+    return null;
+  }
+
+  for (let index = 0; index < skus.length; index += 1) {
+    const sku = skus[index];
+    const candidates = [
+      sku.name,
+      sku.sku_name,
+      sku.image_size,
+      sku.resolution,
+      sku.sku_code,
+      getSkuValue(sku),
+    ].filter((value): value is string => Boolean(value && value.trim()));
+
+    const isMatched = candidates.some(
+      (candidate) => normalizeSizeToken(candidate) === normalizedSize,
+    );
+
+    if (isMatched) {
+      return getSkuKey(sku, index);
+    }
+  }
+
+  return null;
+};
+
+/**
  * Tab类型定义
  */
 type TabType = "text-to-image" | "image-to-image";
@@ -169,6 +262,17 @@ interface GeneratedImage {
   sourceUrl?: string;
   prompt: string;
   isLoaded: boolean;
+}
+
+/**
+ * 来自 sessionStorage 的继续编辑参数
+ */
+interface CreateImageParams {
+  prompt?: string;
+  model?: string;
+  size?: string;
+  imageUrl?: string;
+  generationType?: TabType;
 }
 
 const IMAGE_PRECONNECT_HOST = "https://claude.artimg.top";
@@ -261,6 +365,50 @@ const readString = (value: unknown): string | undefined =>
  */
 const limitPromptLength = (value: string): string =>
   value.slice(0, PROMPT_MAX_LENGTH);
+
+/**
+ * 将外部传入的模型值解析为 create 页实际使用的 model_key。
+ * 优先匹配 name（兼容后端返回模型名称），同时兼容 model_key 与历史映射值。
+ */
+const resolveModelKeyFromValue = (
+  modelValue: string,
+  modelList: ModelItem[],
+): string | null => {
+  const normalizedModelValue = modelValue.trim();
+
+  if (!normalizedModelValue) {
+    return null;
+  }
+
+  const exactMatchedModel = modelList.find(
+    (item) =>
+      item.name === normalizedModelValue ||
+      item.model_key === normalizedModelValue,
+  );
+
+  if (exactMatchedModel) {
+    return exactMatchedModel.model_key;
+  }
+
+  const lowerModelValue = normalizedModelValue.toLowerCase();
+  const caseInsensitiveMatchedModel = modelList.find(
+    (item) =>
+      item.name.toLowerCase() === lowerModelValue ||
+      item.model_key.toLowerCase() === lowerModelValue,
+  );
+
+  if (caseInsensitiveMatchedModel) {
+    return caseInsensitiveMatchedModel.model_key;
+  }
+
+  const legacyModelMap: Record<string, string> = {
+    "GPT Image": "gpt-image-1.5",
+    "Flux Pro": "flux-pro",
+    "Recraft V3": "recraft-v3",
+  };
+
+  return legacyModelMap[normalizedModelValue] ?? null;
+};
 
 const readBananaTaskMetaFromCreateResponse = (
   response: unknown,
@@ -378,6 +526,8 @@ const CreateNew: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   // selectedModel 存储 model_key（来自 API）
   const [selectedModel, setSelectedModel] = useState("");
+  const [pendingModelValue, setPendingModelValue] = useState("");
+  const [pendingSizeValue, setPendingSizeValue] = useState("");
   const [selectedSkuKey, setSelectedSkuKey] = useState("");
   const [models, setModels] = useState<ModelItem[]>([]);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
@@ -461,7 +611,7 @@ const CreateNew: React.FC = () => {
       .then((res) => {
         if (res.code === 200 && res.data.list.length > 0) {
           setModels(res.data.list);
-          setSelectedModel(res.data.list[0].model_key);
+          setSelectedModel((prev) => prev || res.data.list[0].model_key);
         }
       })
       .catch((err) => {
@@ -524,7 +674,7 @@ const CreateNew: React.FC = () => {
 
     if (paramsStr) {
       try {
-        const params = JSON.parse(paramsStr);
+        const params = JSON.parse(paramsStr) as CreateImageParams;
 
         // 回显 prompt
         if (params.prompt) {
@@ -533,29 +683,12 @@ const CreateNew: React.FC = () => {
 
         // 回显 model
         if (params.model) {
-          // 将 gallery 的 model 映射到 create 的 model
-          const modelMap: Record<string, string> = {
-            "GPT Image": "gpt-image-1.5",
-            "Flux Pro": "flux-pro",
-            "Recraft V3": "recraft-v3",
-          };
-          const mappedModel = modelMap[params.model] || "gpt-image-1.5";
-
-          setSelectedModel(mappedModel);
+          setPendingModelValue(params.model);
         }
 
-        // 回显 size（转换为比例格式）
+        // 回显 size（等待模型与选项加载后再匹配）
         if (params.size) {
-          const [width, height] = params.size.split("x").map(Number);
-
-          if (width && height) {
-            // 根据尺寸设置比例
-            if (width === height) setSelectedAspectRatio("1:1");
-            else if (width === 1024 && height === 1792)
-              setSelectedAspectRatio("2:3");
-            else if (width === 1792 && height === 1024)
-              setSelectedAspectRatio("3:2");
-          }
+          setPendingSizeValue(params.size);
         }
 
         // 根据 generationType 切换 tab
@@ -579,6 +712,59 @@ const CreateNew: React.FC = () => {
       }
     }
   }, []);
+
+  /**
+   * 等模型列表加载后，再将继续编辑传入的 model（名称或 key）映射为 model_key。
+   */
+  useEffect(() => {
+    if (!pendingModelValue || models.length === 0) {
+      return;
+    }
+
+    const matchedModelKey = resolveModelKeyFromValue(pendingModelValue, models);
+
+    if (matchedModelKey) {
+      setSelectedModel(matchedModelKey);
+    }
+
+    setPendingModelValue("");
+  }, [pendingModelValue, models]);
+
+  /**
+   * 等模型确定后，再根据 size 回填比例和 SKU：
+   * - GPT: 分辨率 => 比例（如 1024x1024 => 1:1）
+   * - Banana: 直接按 size 匹配比例/SKU
+   */
+  useEffect(() => {
+    if (!pendingSizeValue || pendingModelValue || !selectedModelData) {
+      return;
+    }
+
+    const matchedAspectRatioKey = resolveAspectRatioKeyFromSize(
+      pendingSizeValue,
+      ASPECT_RATIOS,
+      isGPTModel,
+    );
+
+    if (matchedAspectRatioKey) {
+      setSelectedAspectRatio(matchedAspectRatioKey);
+    }
+
+    const matchedSkuKey = resolveSkuKeyFromSize(pendingSizeValue, MODEL_SKUS);
+
+    if (matchedSkuKey) {
+      setSelectedSkuKey(matchedSkuKey);
+    }
+
+    setPendingSizeValue("");
+  }, [
+    pendingSizeValue,
+    pendingModelValue,
+    selectedModelData,
+    ASPECT_RATIOS,
+    isGPTModel,
+    MODEL_SKUS,
+  ]);
 
   /**
    * 处理图片加载完成
