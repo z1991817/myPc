@@ -324,7 +324,7 @@ export default function GalleryPage() {
               </h1>
               <p className="text-lg text-default-600 max-w-3xl mx-auto">
                 探索令人惊叹的 AI
-                生成图像，並发掘其背后的提示词。获取灵感，创造您自己的杰作。
+                生成图像，并发掘其背后的提示词。获取灵感，创造您自己的杰作。
               </p>
             </motion.div>
 

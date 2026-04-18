@@ -34,8 +34,8 @@ import LoginModal from "@/components/LoginModal";
 import { useUserStore } from "@/store/useUserStore";
 
 const navItems = [
-  { label: "画廊", href: "/gallery", icon: ImageIcon },
   { label: "AI 图像", href: "/create", icon: Sparkles },
+  { label: "画廊", href: "/gallery", icon: ImageIcon },
   { label: "价格", href: "/#pricing", icon: DollarSign },
   { label: "收银台", href: "/checkout", icon: WalletCards },
 ];

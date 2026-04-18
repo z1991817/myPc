@@ -89,7 +89,7 @@ const PLAN_TEMPLATES: PlanTemplate[] = [
     id: 1,
     name: "尝鲜体验包",
     price: "¥9.9",
-    description: "适合第一次购买，快速体验生成效果。",
+    description: "一杯瑞幸的钱，告别找图烦恼",
     credits: "1,000 积分",
     features: [
       "约可生成 20 张 Banana2 高级图像",
@@ -120,9 +120,9 @@ const PLAN_TEMPLATES: PlanTemplate[] = [
     credits: "15,000 积分",
     features: [
       "一次性获得 15,000 积分",
-      "终身特权：每月自动发放 500 积分",
-      "官网展示“创世赞助者”专属徽章",
-      "所有专业版功能",
+      "优先排队出图特权",
+      "支持无水印下载",
+      "商业使用许可",
       "优先技术支持",
     ],
     isPopular: false,
