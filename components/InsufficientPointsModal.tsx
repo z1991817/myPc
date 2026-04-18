@@ -30,45 +30,9 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
 }) => {
   const router = useRouter();
 
-  const handleGoToPricing = () => {
+  const handleGoToRecharge = () => {
     onClose();
-
-    // 如果当前不在首页，先跳转到首页
-    if (router.pathname !== "/") {
-      router.push("/").then(() => {
-        // 等待页面加载完成后再滚动到价格区域
-        setTimeout(() => {
-          const pricingSection = document.getElementById("pricing");
-
-          if (pricingSection) {
-            const navbarHeight = 80; // 导航栏高度
-            const elementPosition = pricingSection.getBoundingClientRect().top;
-            const offsetPosition =
-              elementPosition + window.pageYOffset - navbarHeight;
-
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: "smooth",
-            });
-          }
-        }, 500);
-      });
-    } else {
-      // 如果已经在首页，直接滚动到价格区域
-      const pricingSection = document.getElementById("pricing");
-
-      if (pricingSection) {
-        const navbarHeight = 80; // 导航栏高度
-        const elementPosition = pricingSection.getBoundingClientRect().top;
-        const offsetPosition =
-          elementPosition + window.pageYOffset - navbarHeight;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-      }
-    }
+    void router.push("/checkout");
   };
 
   return (
@@ -90,7 +54,7 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
           </Button>
           <Button
             className="bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-            onPress={handleGoToPricing}
+            onPress={handleGoToRecharge}
           >
             去充值
           </Button>
