@@ -103,7 +103,6 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onPreview }) => {
             {isVisible && (
               <Image
                 fill
-                unoptimized
                 alt={image.prompt}
                 className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${
                   isLoaded ? "opacity-100" : "opacity-0"
