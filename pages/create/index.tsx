@@ -73,15 +73,6 @@ interface AspectRatioOption {
 }
 
 /**
- * GPT 模型比例 → 实际分辨率映射
- */
-const GPT_RESOLUTION_MAP: Record<string, string> = {
-  "1:1": "1024x1024",
-  "9:16": "1024x1792",
-  "16:9": "1792x1024",
-};
-
-/**
  * GPT 历史记录尺寸（分辨率）到比例的映射，用于继续编辑时回填。
  */
 const GPT_SIZE_TO_RATIO_MAP: Record<string, string> = {
@@ -107,17 +98,16 @@ const getModelIcon = (manufacturer: string): string => {
 
 /**
  * 将 API 返回的 aspect_ratios 字符串数组转为选项数组
- * GPT 模型比例值使用分辨率，Banana 模型直接使用比例字符串
+ * 所有模型统一使用比例字符串（如 1:1、16:9）作为接口传值
  */
 const buildAspectRatioOptions = (
   aspectRatios: string[] = [],
-  isGPT: boolean,
 ): AspectRatioOption[] => {
   return aspectRatios.map((ratio) => ({
     key: ratio,
     label: ratio,
     ratio,
-    value: isGPT ? (GPT_RESOLUTION_MAP[ratio] ?? ratio) : ratio,
+    value: ratio,
   }));
 };
 
@@ -566,8 +556,8 @@ const CreateNew: React.FC = () => {
   const ASPECT_RATIOS = useMemo(() => {
     if (!selectedModelData) return [];
 
-    return buildAspectRatioOptions(selectedModelData.aspect_ratios, isGPTModel);
-  }, [selectedModelData, isGPTModel]);
+    return buildAspectRatioOptions(selectedModelData.aspect_ratios);
+  }, [selectedModelData]);
   // 模型分辨率 SKU（如接口无 skus，保持为空）
   const MODEL_SKUS = useMemo(
     () => selectedModelData?.skus ?? [],
@@ -1346,10 +1336,14 @@ const CreateNew: React.FC = () => {
       const selectedRatio = ASPECT_RATIOS.find(
         (ratio) => ratio.key === selectedAspectRatio,
       );
-      const sizeValue = selectedRatio?.value || "1024x1024";
+      const sizeValue = selectedRatio?.value || selectedAspectRatio || "1:1";
       const currentSkuValue = selectedSkuData
         ? getSkuValue(selectedSkuData)
         : "";
+      const currentSkuId =
+        selectedSkuData?.id !== undefined && selectedSkuData?.id !== null
+          ? selectedSkuData.id
+          : undefined;
 
       // 判断是文生图还是图生图
       if (activeTab === "image-to-image") {
@@ -1378,10 +1372,10 @@ const CreateNew: React.FC = () => {
             prompt,
             selectedAspectRatio,
             currentSkuValue,
-            currentConsumePoints ?? 0,
             "image-to-image",
             idempotencyKey,
             inputImageUrls,
+            currentSkuId,
           );
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
@@ -1408,9 +1402,7 @@ const CreateNew: React.FC = () => {
           // 非 Nano Banana 模型：调用图生图接口后，按 taskId 轮询任务结果
           const response = await imageToImage({
             prompt,
-            model: selectedModel,
             size: sizeValue,
-            consumePoints: currentConsumePoints ?? 0,
             skuCode: "",
             imageUrl: inputImageUrls,
           });
@@ -1485,9 +1477,10 @@ const CreateNew: React.FC = () => {
             prompt,
             selectedAspectRatio,
             currentSkuValue,
-            currentConsumePoints ?? 0,
             "text-to-image",
             idempotencyKey,
+            undefined,
+            currentSkuId,
           );
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
@@ -1514,9 +1507,7 @@ const CreateNew: React.FC = () => {
           // 非 Nano Banana 模型：调用文生图接口后，按 taskId 轮询任务结果
           const response = await generateImage({
             prompt,
-            model: selectedModel,
             size: sizeValue,
-            consumePoints: currentConsumePoints ?? 0,
             skuCode: "",
           });
 
@@ -1738,9 +1729,8 @@ const CreateNew: React.FC = () => {
               创意工作室
             </h1>
             <p className="text-white/60 max-w-2xl mx-auto leading-relaxed text-base lg:text-lg">
-              将您的想象力转化为令人惊艳的视觉效果。从多种AI模型中选择，包括Seedream、Nano
-              Banana和Nano Banana
-              Pro，通过简单的文字描述生成专业品质的图像。您的一站式AI艺术生成创意工作室。
+              将您的想象力转化为令人惊艳的视觉效果。从多种AI模型中选择，包括GPT-1.5-IMAGE、Nano
+              Banana和Nano Banana Pro，通过简单的文字描述生成专业品质的图像。您的一站式AI艺术生成创意工作室。
             </p>
           </header>
 
@@ -1828,7 +1818,7 @@ const CreateNew: React.FC = () => {
                                 {model.name}
                               </span>
                             </div>
-                            <div className="text-[10px] text-default-500 mt-0.5">
+                            <div className="mt-1 text-xs font-medium leading-snug text-default-700">
                               {model.description}
                             </div>
                           </div>

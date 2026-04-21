@@ -86,6 +86,10 @@ export interface GenerateImageResponse {
 
 import request from "./request";
 
+const FIXED_TEXT_TO_IMAGE_MODEL = "gpt-image/1.5-text-to-image";
+const FIXED_IMAGE_TO_IMAGE_MODEL = "gpt-image/1.5-image-to-image";
+const FIXED_BILLING_MODEL_KEY = "gpt_image_to_image_points";
+
 const buildApiRequestUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) {
     return path;
@@ -175,16 +179,18 @@ export const textToImage = async (
 // 新的图片生成接口（调用真实后端接口）
 export interface GenerateImagePayload {
   prompt: string;
-  model: string;
   size: string;
-  consumePoints: number;
   skuCode: string;
 }
 
 export const generateImage = async (
   payload: GenerateImagePayload,
 ): Promise<GenerateImageResponse> => {
-  return request.post("/app/text-to-image", payload);
+  return request.post("/app/text-to-image", {
+    ...payload,
+    model: FIXED_TEXT_TO_IMAGE_MODEL,
+    billingModelKey: FIXED_BILLING_MODEL_KEY,
+  });
 };
 
 // 图生图响应类型（新格式）
@@ -238,7 +244,11 @@ export interface ImageToImagePayload extends GenerateImagePayload {
 export const imageToImage = async (
   payload: ImageToImagePayload,
 ): Promise<ImageToImageResponse> => {
-  return request.post("/app/image-to-image", payload);
+  return request.post("/app/image-to-image", {
+    ...payload,
+    model: FIXED_IMAGE_TO_IMAGE_MODEL,
+    billingModelKey: FIXED_BILLING_MODEL_KEY,
+  });
 };
 
 // Banana 系列图片生成响应类型
@@ -291,29 +301,31 @@ export interface TextToImageTaskResponse {
  * @param prompt 提示词
  * @param aspectRatio 图片比例（如 "1:1"、"16:9"）
  * @param imageSize 当前选中的 SKU 值（如 1K、2K）
- * @param consumePoints 当前选中 SKU 的消耗积分
  * @param type 生成类型：text-to-image 或 image-to-image
  * @param imageUrls 参考图片URL数组（仅 image-to-image 时需要）
+ * @param skuId 选中 SKU 的 ID（有选中 SKU 时传）
  */
 export const bananaCreateImage = async (
   model: string,
   prompt: string,
   aspectRatio: string,
   imageSize: string,
-  consumePoints: number,
   type: "text-to-image" | "image-to-image",
   idempotencyKey: string,
   imageUrls?: string[],
+  skuId?: number | string,
 ): Promise<BananaCreateImageResponse> => {
   return request.post("/app/banana-CreateImage", {
     model,
     prompt,
     aspectRatio,
     imageSize,
-    consumePoints,
     type,
     idempotencyKey,
     ...(imageUrls && imageUrls.length > 0 ? { imageUrls } : {}),
+    ...(skuId !== undefined && skuId !== null && `${skuId}`.trim()
+      ? { skuId }
+      : {}),
   });
 };
 

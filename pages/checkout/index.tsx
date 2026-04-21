@@ -93,7 +93,7 @@ const PLAN_TEMPLATES: PlanTemplate[] = [
     credits: "1,000 积分",
     features: [
       "约可生成 20 张 Banana2 高级图像",
-      "或 50 张基础图像",
+      "或 40 张基础图像",
       "支持无水印下载",
     ],
     isPopular: false,

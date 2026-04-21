@@ -444,7 +444,7 @@ export default function IndexNewPage({
               </h1>
 
               <p className="mx-auto mb-10 max-w-3xl text-base leading-8 text-white/60 md:text-lg lg:text-xl">
-                输入一句描述，搭载全新 Nano Banana 2 引擎，单张成本低至 0.2
+                输入一句描述，搭载全新 Nano Banana 2 引擎，单张成本低至 0.5
                 元。完美解决光影质感与细节崩坏，100% 放心商用。
               </p>
 

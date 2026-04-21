@@ -97,7 +97,7 @@ export const pricingPlansData: PricingPlanData[] = [
     features: [
       "获得 1,000 积分",
       "约可生成 20 张 Banana2 顶级图像",
-      "或 50 张基础图像",
+      "或 40 张基础图像",
       "无水印下载",
     ],
     isPopular: false,

@@ -36,8 +36,7 @@ import { useUserStore } from "@/store/useUserStore";
 const navItems = [
   { label: "AI 图像", href: "/create", icon: Sparkles },
   { label: "画廊", href: "/gallery", icon: ImageIcon },
-  { label: "价格", href: "/#pricing", icon: DollarSign },
-  { label: "收银台", href: "/checkout", icon: WalletCards },
+  { label: "价格", href: "/checkout", icon: DollarSign },
 ];
 
 const TopNavbar: React.FC = () => {
