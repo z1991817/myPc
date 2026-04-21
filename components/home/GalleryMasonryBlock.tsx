@@ -7,6 +7,8 @@ import Masonry from "react-masonry-css";
 import { Card, CardBody } from "@heroui/card";
 import { Image as ImageLucide } from "lucide-react";
 
+import { normalizeImageURL } from "@/lib/image-base-url";
+
 interface GalleryMasonryBlockProps {
   galleryLoading: boolean;
   galleryImages: GalleryImageItem[];
@@ -77,46 +79,56 @@ export default function GalleryMasonryBlock({
         className="new-masonry-grid"
         columnClassName="new-masonry-grid_column"
       >
-        {galleryImages.map((image, index) => (
-          <motion.div
-            key={image.id}
-            className={`${index >= mobileGalleryPreviewCount ? "hidden md:block " : ""}group mb-4 cursor-pointer`}
-            initial={{ opacity: 0, y: 24 }}
-            transition={{
-              duration: 0.45,
-              delay: Math.min(index * 0.03, 0.24),
-            }}
-            viewport={{ once: true, amount: 0.2 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            onClick={() => router.push("/gallery")}
-          >
-            <Card className="overflow-hidden border border-white/5 bg-white/5 transition-all duration-300 hover:border-white/15 hover:shadow-xl">
-              <CardBody className="p-0">
-                <div className="relative overflow-hidden">
-                  {/*
-                    首页画廊列表使用预览图优先，提升首屏加载速度；
-                    若后端未返回预览图，则回退 cos_url。
-                  */}
-                  <Image
-                    unoptimized
-                    alt={image.prompt || "AI 生成图片"}
-                    className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    height={image.height || 1024}
-                    loading="lazy"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                    src={image.preview_url || image.previewUrl || image.cos_url}
-                    width={image.width || 1024}
-                  />
-                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <p className="line-clamp-3 text-xs leading-6 text-white/90">
-                      {image.prompt}
-                    </p>
+        {galleryImages.map((image, index) => {
+          const previewImageSrc = normalizeImageURL(
+            image.thumbnail_url ||
+              image.thumbnailUrl ||
+              image.preview_url ||
+              image.previewUrl ||
+              image.cos_url,
+          );
+
+          return (
+            <motion.div
+              key={image.id}
+              className={`${index >= mobileGalleryPreviewCount ? "hidden md:block " : ""}group mb-4 cursor-pointer`}
+              initial={{ opacity: 0, y: 24 }}
+              transition={{
+                duration: 0.45,
+                delay: Math.min(index * 0.03, 0.24),
+              }}
+              viewport={{ once: true, amount: 0.2 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              onClick={() => router.push("/gallery")}
+            >
+              <Card className="overflow-hidden border border-white/5 bg-white/5 transition-all duration-300 hover:border-white/15 hover:shadow-xl">
+                <CardBody className="p-0">
+                  <div className="relative overflow-hidden">
+                    {/*
+                      首页画廊列表优先使用 thumbnail_url，提升首屏加载速度；
+                      若后端未返回缩略图，则依次回退 preview_url、cos_url。
+                    */}
+                    <Image
+                      unoptimized
+                      alt={image.prompt || "AI 生成图片"}
+                      className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      height={image.height || 1024}
+                      loading="lazy"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                      src={previewImageSrc}
+                      width={image.width || 1024}
+                    />
+                    <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <p className="line-clamp-3 text-xs leading-6 text-white/90">
+                        {image.prompt}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-        ))}
+                </CardBody>
+              </Card>
+            </motion.div>
+          );
+        })}
       </Masonry>
     );
   }

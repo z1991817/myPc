@@ -129,12 +129,18 @@ function formatStatValue(
 
 /**
  * 首页画廊卡片预览图优先级：
- * 1. 后端 preview_url / previewUrl
- * 2. cos_url（直接使用原图，避免前端拼接处理参数导致部分节点连接异常）
+ * 1. 后端 thumbnail_url / thumbnailUrl（首页专用缩略图）
+ * 2. 后端 preview_url / previewUrl
+ * 3. cos_url（直接使用原图，避免前端拼接处理参数导致部分节点连接异常）
  */
 function resolveGalleryPreviewURL(item: GalleryImageItem): string {
   const normalizedCosUrl = normalizeImageURL(item.cos_url);
+  const rawThumbnailUrl = item.thumbnail_url || item.thumbnailUrl;
   const rawPreviewUrl = item.preview_url || item.previewUrl;
+
+  if (rawThumbnailUrl) {
+    return normalizeImageURL(rawThumbnailUrl);
+  }
 
   if (rawPreviewUrl) {
     return normalizeImageURL(rawPreviewUrl);
@@ -255,12 +261,6 @@ export default function IndexNewPage({
   /** 画廊数据状态 */
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
-  const gallerySectionRef = useRef<HTMLElement>(null);
-  const isGallerySectionInView = useInView(gallerySectionRef, {
-    once: true,
-    amount: 0.08,
-    margin: "200px 0px",
-  });
   const hasRequestedGalleryRef = useRef(false);
 
   const techPillars: TechPillar[] = techPillarsData.map((pillar) => ({
@@ -279,7 +279,8 @@ export default function IndexNewPage({
 
   /** 加载画廊数据 */
   useEffect(() => {
-    if (!isGallerySectionInView || hasRequestedGalleryRef.current) {
+    // 首页首屏即请求画廊数据，不再依赖滚动到可视区域触发
+    if (hasRequestedGalleryRef.current) {
       return;
     }
 
@@ -307,7 +308,7 @@ export default function IndexNewPage({
     };
 
     fetchGallery();
-  }, [isGallerySectionInView]);
+  }, []);
 
   useEffect(() => {
     const syncAnnouncementVisibility = () => {
@@ -620,7 +621,6 @@ export default function IndexNewPage({
             第四屏 - 画廊瀑布流（与技术支柱互换位置）
             ============================================ */}
         <section
-          ref={gallerySectionRef}
           className="w-full bg-[#050b16] px-4 py-20 md:py-28"
           id="gallery"
         >
@@ -635,9 +635,7 @@ export default function IndexNewPage({
 
             {/* 动态分包：瀑布流区块 */}
             <Reveal delay={0.06}>
-              {isGallerySectionInView ||
-              galleryLoading ||
-              galleryImages.length > 0 ? (
+              {galleryLoading || galleryImages.length > 0 ? (
                 <GalleryMasonryBlock
                   galleryImages={galleryImages}
                   galleryLoading={galleryLoading}
@@ -882,4 +880,3 @@ export const getStaticProps: GetStaticProps<IndexPageProps> = async () => {
     },
   };
 };
-

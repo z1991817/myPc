@@ -6,6 +6,8 @@ import request from "./request";
 export interface MyCreationItem {
   id: number;
   cos_url: string;
+  thumbnail_url?: string;
+  thumbnailUrl?: string;
   preview_url?: string;
   previewUrl?: string;
   prompt: string;

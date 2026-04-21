@@ -37,12 +37,18 @@ interface CreationCardProps {
 
 /**
  * 生成卡片预览图 URL：
- * 1. 优先使用后端返回 preview_url/previewUrl
- * 2. 若无预览字段则直接回退 cos_url，避免前端拼接处理参数导致部分节点连接异常
+ * 1. 优先使用后端返回 thumbnail_url/thumbnailUrl（列表缩略图）
+ * 2. 次选 preview_url/previewUrl
+ * 3. 若无预览字段则直接回退 cos_url，避免前端拼接处理参数导致部分节点连接异常
  */
 const resolveCreationPreviewURL = (item: MyCreationItem): string => {
   const normalizedCosUrl = normalizeImageURL(item.cos_url);
+  const rawThumbnailUrl = item.thumbnail_url || item.thumbnailUrl;
   const rawPreviewUrl = item.preview_url || item.previewUrl;
+
+  if (rawThumbnailUrl) {
+    return normalizeImageURL(rawThumbnailUrl);
+  }
 
   if (rawPreviewUrl) {
     return normalizeImageURL(rawPreviewUrl);

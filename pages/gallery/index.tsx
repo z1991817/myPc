@@ -24,12 +24,18 @@ import TopNavbar from "@/components/TopNavbar";
 
 /**
  * 画廊列表预览图优先级：
- * 1. 后端 preview_url / previewUrl
- * 2. cos_url（直接使用原图，避免前端拼接处理参数导致部分节点连接异常）
+ * 1. 后端 thumbnail_url / thumbnailUrl（列表缩略图）
+ * 2. 后端 preview_url / previewUrl
+ * 3. cos_url（直接使用原图，避免前端拼接处理参数导致部分节点连接异常）
  */
 const resolveGalleryPreviewURL = (item: GalleryImageItem): string => {
   const normalizedCosUrl = normalizeImageURL(item.cos_url);
+  const rawThumbnailUrl = item.thumbnail_url || item.thumbnailUrl;
   const rawPreviewUrl = item.preview_url || item.previewUrl;
+
+  if (rawThumbnailUrl) {
+    return normalizeImageURL(rawThumbnailUrl);
+  }
 
   if (rawPreviewUrl) {
     return normalizeImageURL(rawPreviewUrl);
