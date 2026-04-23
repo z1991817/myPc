@@ -1405,6 +1405,7 @@ const CreateNew: React.FC = () => {
             size: sizeValue,
             skuCode: "",
             imageUrl: inputImageUrls,
+            modelValue: selectedModelData?.name || selectedModel,
           });
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
@@ -1509,6 +1510,7 @@ const CreateNew: React.FC = () => {
             prompt,
             size: sizeValue,
             skuCode: "",
+            modelValue: selectedModelData?.name || selectedModel,
           });
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
@@ -1729,7 +1731,7 @@ const CreateNew: React.FC = () => {
               创意工作室
             </h1>
             <p className="text-white/60 max-w-2xl mx-auto leading-relaxed text-base lg:text-lg">
-              将您的想象力转化为令人惊艳的视觉效果。从多种AI模型中选择，包括GPT-1.5-IMAGE、Nano
+              将您的想象力转化为令人惊艳的视觉效果。从多种AI模型中选择，包括GPT-IMAGE-2、Nano
               Banana和Nano Banana Pro，通过简单的文字描述生成专业品质的图像。您的一站式AI艺术生成创意工作室。
             </p>
           </header>

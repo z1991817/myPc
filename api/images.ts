@@ -86,9 +86,40 @@ export interface GenerateImageResponse {
 
 import request from "./request";
 
-const FIXED_TEXT_TO_IMAGE_MODEL = "gpt-image/1.5-text-to-image";
-const FIXED_IMAGE_TO_IMAGE_MODEL = "gpt-image/1.5-image-to-image";
 const FIXED_BILLING_MODEL_KEY = "gpt_image_to_image_points";
+const GPT_IMAGE_1_5_TEXT_TO_IMAGE_MODEL = "gpt-image/1.5-text-to-image";
+const GPT_IMAGE_1_5_IMAGE_TO_IMAGE_MODEL = "gpt-image/1.5-image-to-image";
+const GPT_IMAGE_2_TEXT_TO_IMAGE_MODEL = "gpt-image-2-text-to-image";
+const GPT_IMAGE_2_IMAGE_TO_IMAGE_MODEL = "gpt-image-2-image-to-image";
+
+interface GptImageModelConfig {
+  textToImageModel: string;
+  imageToImageModel: string;
+}
+
+const normalizeModelToken = (value?: string): string =>
+  (value || "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+
+const resolveGptImageModelConfig = (
+  modelValue?: string,
+): GptImageModelConfig => {
+  const normalizedModel = normalizeModelToken(modelValue);
+
+  if (
+    normalizedModel.includes("gpt-image-2") ||
+    normalizedModel.includes("gpt-image2")
+  ) {
+    return {
+      textToImageModel: GPT_IMAGE_2_TEXT_TO_IMAGE_MODEL,
+      imageToImageModel: GPT_IMAGE_2_IMAGE_TO_IMAGE_MODEL,
+    };
+  }
+
+  return {
+    textToImageModel: GPT_IMAGE_1_5_TEXT_TO_IMAGE_MODEL,
+    imageToImageModel: GPT_IMAGE_1_5_IMAGE_TO_IMAGE_MODEL,
+  };
+};
 
 const buildApiRequestUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) {
@@ -181,14 +212,18 @@ export interface GenerateImagePayload {
   prompt: string;
   size: string;
   skuCode: string;
+  modelValue?: string;
 }
 
 export const generateImage = async (
   payload: GenerateImagePayload,
 ): Promise<GenerateImageResponse> => {
+  const { modelValue, ...requestPayload } = payload;
+  const modelConfig = resolveGptImageModelConfig(modelValue);
+
   return request.post("/app/text-to-image", {
-    ...payload,
-    model: FIXED_TEXT_TO_IMAGE_MODEL,
+    ...requestPayload,
+    model: modelConfig.textToImageModel,
     billingModelKey: FIXED_BILLING_MODEL_KEY,
   });
 };
@@ -244,9 +279,12 @@ export interface ImageToImagePayload extends GenerateImagePayload {
 export const imageToImage = async (
   payload: ImageToImagePayload,
 ): Promise<ImageToImageResponse> => {
+  const { modelValue, ...requestPayload } = payload;
+  const modelConfig = resolveGptImageModelConfig(modelValue);
+
   return request.post("/app/image-to-image", {
-    ...payload,
-    model: FIXED_IMAGE_TO_IMAGE_MODEL,
+    ...requestPayload,
+    model: modelConfig.imageToImageModel,
     billingModelKey: FIXED_BILLING_MODEL_KEY,
   });
 };
