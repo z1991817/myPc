@@ -86,7 +86,6 @@ export interface GenerateImageResponse {
 
 import request from "./request";
 
-const FIXED_BILLING_MODEL_KEY = "gpt_image_to_image_points";
 const GPT_IMAGE_1_5_TEXT_TO_IMAGE_MODEL = "gpt-image/1.5-text-to-image";
 const GPT_IMAGE_1_5_IMAGE_TO_IMAGE_MODEL = "gpt-image/1.5-image-to-image";
 const GPT_IMAGE_2_TEXT_TO_IMAGE_MODEL = "gpt-image-2-text-to-image";
@@ -216,15 +215,15 @@ export interface GenerateImagePayload {
 }
 
 export const generateImage = async (
-  payload: GenerateImagePayload,
+  payload: GenerateImagePayload & { billingModelKey?: string },
 ): Promise<GenerateImageResponse> => {
-  const { modelValue, ...requestPayload } = payload;
+  const { modelValue, billingModelKey, ...requestPayload } = payload;
   const modelConfig = resolveGptImageModelConfig(modelValue);
 
   return request.post("/app/text-to-image", {
     ...requestPayload,
     model: modelConfig.textToImageModel,
-    billingModelKey: FIXED_BILLING_MODEL_KEY,
+    billingModelKey,
   });
 };
 
@@ -277,15 +276,15 @@ export interface ImageToImagePayload extends GenerateImagePayload {
 }
 
 export const imageToImage = async (
-  payload: ImageToImagePayload,
+  payload: ImageToImagePayload & { billingModelKey?: string },
 ): Promise<ImageToImageResponse> => {
-  const { modelValue, ...requestPayload } = payload;
+  const { modelValue, billingModelKey, ...requestPayload } = payload;
   const modelConfig = resolveGptImageModelConfig(modelValue);
 
   return request.post("/app/image-to-image", {
     ...requestPayload,
     model: modelConfig.imageToImageModel,
-    billingModelKey: FIXED_BILLING_MODEL_KEY,
+    billingModelKey,
   });
 };
 

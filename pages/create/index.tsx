@@ -1406,6 +1406,7 @@ const CreateNew: React.FC = () => {
             skuCode: "",
             imageUrl: inputImageUrls,
             modelValue: selectedModelData?.name || selectedModel,
+            billingModelKey: selectedModelData?.model_key || selectedModel,
           });
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);
@@ -1511,6 +1512,7 @@ const CreateNew: React.FC = () => {
             size: sizeValue,
             skuCode: "",
             modelValue: selectedModelData?.name || selectedModel,
+            billingModelKey: selectedModelData?.model_key || selectedModel,
           });
 
           const taskMeta = readBananaTaskMetaFromCreateResponse(response);

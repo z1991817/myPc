@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
@@ -27,11 +28,13 @@ import {
   ReceiptText,
   Sparkles,
   User,
-  WalletCards,
 } from "lucide-react";
 
-import LoginModal from "@/components/LoginModal";
 import { useUserStore } from "@/store/useUserStore";
+
+const LoginModal = dynamic(() => import("@/components/LoginModal"), {
+  ssr: false,
+});
 
 const navItems = [
   { label: "AI 图像", href: "/create", icon: Sparkles },
@@ -113,10 +116,10 @@ const TopNavbar: React.FC = () => {
             <NextLink
               className="flex items-center gap-3 transition-opacity hover:opacity-90"
               href="/"
+              prefetch={false}
             >
               <div className="flex ">
                 <Image
-                  priority
                   alt="ArtImg logo candidate"
                   className="h-11 w-11 rounded-2xl"
                   height={44}
@@ -155,7 +158,7 @@ const TopNavbar: React.FC = () => {
                     variant="bordered"
                     {...(item.href === "/#pricing"
                       ? { onPress: scrollToPricing }
-                      : { as: NextLink, href: item.href })}
+                      : { as: NextLink, href: item.href, prefetch: false })}
                   >
                     <span className="absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-purple-500/0 opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-100" />
                     <span

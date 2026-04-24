@@ -16,9 +16,7 @@ import { useLoginModalStore } from "@/store/useLoginModalStore";
 import { useUserStore } from "@/store/useUserStore";
 import { refreshCurrentUser } from "@/api/auth";
 import "@/styles/globals.css";
-import "swiper/css";
-import "swiper/css/effect-coverflow";
-import "swiper/css/pagination";
+// Swiper CSS 已在 globals.css 中统一导入，此处不再重复引入
 
 const LoginModal = dynamic(() => import("@/components/LoginModal"), {
   ssr: false,
@@ -48,26 +46,55 @@ function App({ Component, pageProps }: AppProps) {
     await refreshCurrentUser({ silent: true });
   }, []);
 
-  useEffect(() => {
-    const syncOnRouteChange = () => {
+  const scheduleRefreshUserProfile = useCallback(() => {
+    if (typeof window === "undefined") {
+      return () => undefined;
+    }
+
+    const runRefresh = () => {
       void refreshUserProfile();
     };
 
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(runRefresh, { timeout: 1200 });
+
+      return () => {
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(runRefresh, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [refreshUserProfile]);
+
+  useEffect(() => {
+    let cleanupScheduledRefresh: (() => void) | undefined;
+
+    const syncOnRouteChange = () => {
+      cleanupScheduledRefresh?.();
+      cleanupScheduledRefresh = scheduleRefreshUserProfile();
+    };
+
     if (useUserStore.persist.hasHydrated()) {
-      void refreshUserProfile();
+      cleanupScheduledRefresh = scheduleRefreshUserProfile();
     }
 
     const unsubscribeHydration = useUserStore.persist.onFinishHydration(() => {
-      void refreshUserProfile();
+      cleanupScheduledRefresh?.();
+      cleanupScheduledRefresh = scheduleRefreshUserProfile();
     });
 
     router.events.on("routeChangeComplete", syncOnRouteChange);
 
     return () => {
+      cleanupScheduledRefresh?.();
       unsubscribeHydration();
       router.events.off("routeChangeComplete", syncOnRouteChange);
     };
-  }, [refreshUserProfile, router.events]);
+  }, [router.events, scheduleRefreshUserProfile]);
 
   return (
     <QueryClientProvider client={queryClient}>

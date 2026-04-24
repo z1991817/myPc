@@ -6,7 +6,11 @@
       "WebFetch(domain:nanobananaimg.com)",
       "WebSearch",
       "WebFetch(domain:claude.artimg.top)",
-      "Bash(curl -I \"https://claude.artimg.top/temp/2026-04-16/image-1776307556695-393326246.jpg\")"
+      "Bash(curl -I \"https://claude.artimg.top/temp/2026-04-16/image-1776307556695-393326246.jpg\")",
+      "WebFetch(domain:artimg.top)",
+      "Bash(npm run *)",
+      "WebFetch(domain:pagespeed.web.dev)",
+      "WebFetch(domain:www.googleapis.com)"
     ]
   }
 }

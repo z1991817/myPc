@@ -39,3 +39,7 @@ yarn.lock
 package-lock.json
 bun.lockb
 .env
+
+# local temporary artifacts
+.tmp-*
+.lighthouse-*
