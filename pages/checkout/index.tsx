@@ -103,7 +103,7 @@ const PLAN_TEMPLATES: PlanTemplate[] = [
     name: "专业创作包",
     price: "¥39.9",
     description: "适合高频创作，积分更充足，性价比更高。",
-    credits: "4,500 + 500 积分",
+    credits: "4,500积分",
     features: [
       "约可生成 90 张 Banana2 高级图像",
       "优先排队出图特权",
