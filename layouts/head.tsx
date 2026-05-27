@@ -6,11 +6,10 @@ import { siteConfig } from "@/config/site";
 import {
   getAlternates,
   getCanonicalUrl,
-  getOrganizationJsonLd,
+  getPageStructuredData,
   getPageSeo,
   getSeoKeywords,
   getSeoTitle,
-  getWebsiteJsonLd,
 } from "@/lib/seo";
 
 export const Head = () => {
@@ -23,7 +22,7 @@ export const Head = () => {
     ? "noindex, nofollow"
     : "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1";
   const ogImageUrl = getCanonicalUrl(siteConfig.defaultOgImage);
-  const structuredData = [getOrganizationJsonLd(), getWebsiteJsonLd()];
+  const structuredData = getPageStructuredData(router.pathname);
 
   return (
     <NextHead>

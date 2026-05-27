@@ -1,4 +1,5 @@
 import { siteConfig } from "@/config/site";
+import { faqItemsData } from "@/data/homepage-content";
 
 export type SeoMeta = {
   title: string;
@@ -10,9 +11,17 @@ export type SeoMeta = {
 
 const pageSeoByPathname: Record<string, SeoMeta> = {
   "/": {
-    title: "AI图像生成器 - 专业智能绘画平台 | Nano banana图像生成器",
-    description: siteConfig.description,
-    keywords: siteConfig.defaultKeywords,
+    title: "AI 创作工作台 - 在线图像生成与编辑 | ArtImg",
+    description:
+      "ArtImg AI 创作工作台支持文生图、图生图、多模型切换和高质量下载，覆盖海报、电商主图、角色设定和品牌视觉等创作场景。",
+    keywords: [
+      "AI创作工作台",
+      "在线AI图片生成",
+      "文生图",
+      "图生图",
+      "AI图片编辑",
+      "商业视觉生成",
+    ],
     canonicalPath: "/",
   },
   "/gallery": {
@@ -41,7 +50,34 @@ const pageSeoByPathname: Record<string, SeoMeta> = {
       "AI logo设计",
       "AI角色一致性",
     ],
-    canonicalPath: "/create",
+    canonicalPath: "/",
+    noindex: true,
+  },
+  "/features": {
+    title: "AI 图片处理功能总览 | ArtImg",
+    description:
+      "查看 ArtImg 的 AI 图片处理与生成能力，包括文字渲染、角色一致性、多图融合、画廊案例和创作定价信息。",
+    keywords: [
+      "AI图片处理功能",
+      "AI图像生成能力",
+      "角色一致性",
+      "多图融合",
+      "AI创作平台功能",
+    ],
+    canonicalPath: "/features",
+  },
+  "/faq": {
+    title: "AI 图片创作常见问题 | ArtImg",
+    description:
+      "汇总 ArtImg 在图像尺寸、商用授权、提示词优化和图生图流程中的常见问题，帮助你更快产出高质量 AI 图片。",
+    keywords: [
+      "AI图片常见问题",
+      "AI绘图FAQ",
+      "提示词优化",
+      "AI图片商用授权",
+      "图生图教程",
+    ],
+    canonicalPath: "/faq",
   },
   "/pricing": {
     title: "价格方案",
@@ -172,6 +208,31 @@ export function getWebsiteJsonLd() {
     description: siteConfig.description,
     inLanguage: ["zh-CN", "en"],
   };
+}
+
+export function getFaqJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItemsData.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export function getPageStructuredData(pathname: string) {
+  const structuredData = [getOrganizationJsonLd(), getWebsiteJsonLd()];
+
+  if (pathname === "/faq") {
+    structuredData.push(getFaqJsonLd());
+  }
+
+  return structuredData;
 }
 
 export function getIndexableSitemapEntries() {

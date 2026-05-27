@@ -27,14 +27,13 @@ import {
   ReceiptText,
   Sparkles,
   User,
-  WalletCards,
 } from "lucide-react";
 
 import LoginModal from "@/components/LoginModal";
 import { useUserStore } from "@/store/useUserStore";
 
 const navItems = [
-  { label: "AI 图像", href: "/create", icon: Sparkles },
+  { label: "AI 创作", href: "/", icon: Sparkles },
   { label: "画廊", href: "/gallery", icon: ImageIcon },
   { label: "价格", href: "/checkout", icon: DollarSign },
 ];
